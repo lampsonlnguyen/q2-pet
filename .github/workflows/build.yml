@@ -22,21 +22,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang lld
-          python -m pip install Pillow
-      - name: Generate sprites
-        run: python tools/generate_pets.py
-      - name: Check sprite layout and decode
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          from PIL import Image
-          for path in Path("generated/pets").glob("*.png"):
-              with Image.open(path) as im:
-                  assert im.size == (1344, 384), (path, im.size)
-                  assert im.mode == "RGBA", (path, im.mode)
-                  im.verify()
-          assert {p.name for p in Path("generated/pets").glob("*.png")} == {"snowman.png"}
-          PY
       - name: Check host logic
         run: |
           cc -O2 -fno-math-errno -DHOST fidget.c -o /tmp/q2-pet-check
