@@ -1,3 +1,52 @@
+# Q2 Pet
+
+A seasonal and international virtual-pet collection for the Shanling Q2 / Q2 Pod.
+Forked from [DiamondBond's q2-fidget](https://github.com/DiamondBond/q2-fidget);
+its original ghost, Tamagotchi mechanics, touch interactions, and wheel controls are preserved.
+
+## Character collection
+
+| Character | Availability |
+| --- | --- |
+| Ghost | Halloween in automatic mode (Northern Hemisphere), or manually any time |
+| Snowman | Winter |
+| Blossom | Spring |
+| Sun | Summer |
+| Maple | Autumn |
+| Lantern | Lunar New Year-inspired, selectable year-round |
+| Moon | Universal nighttime companion, selectable year-round |
+| Diamond | Permanent year-round pet, selectable manually |
+| Custom | Your own `buddy.png` sprite sheet |
+
+Press **Return** for the menu and choose **Pet** repeatedly to cycle through
+Auto, Ghost, Snowman, Blossom, Sun, Maple, Lantern, Moon, Diamond, and Custom.
+Choose **Hemisphere: North/South** to rotate the four seasons six months apart.
+Auto uses the device's **UTC month**, and returns to a new seasonal pet
+without affecting Tamagotchi progress. Celebrations and the Diamond are
+available as manual choices; cultural calendars are not inferred from location.
+
+All new pets use the original 7×2, 1344×384 sprite sheet with 14 moods:
+normal, blink, happy, petted, surprised, annoyed, boo, dizzy, asleep, sad,
+sick, egg, halo, and horns. No new graphics decoder or Q2 runtime libraries.
+
+## Build and install
+
+```sh
+python3 -m pip install Pillow
+./build.sh
+```
+
+The build generates sprite sheets in `generated/pets/` and packages them in
+`dist/fidget.zip` as `.fidget/pets/*.png`. On-device app name: **Pet**,
+under **Library → Games**. The existing `.fidget` folder and saved
+Tamagotchi data remain compatible with DiamondBond's original app. GitHub
+Actions builds and tests the ZIP on every push; a `v*` tag publishes a release.
+
+To modify an expression, edit `tools/generate_pets.py` and rebuild.
+If a sheet fails to load, the original ghost is used as a fallback.
+
+---
+
 # Buddy
 
 A ghost buddy to poke on the Shanling Q2, for [Q2 Pod](https://github.com/DiamondBond/q2-pod).
