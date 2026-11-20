@@ -1842,6 +1842,7 @@ static void template(unsigned char *rgba) {
     static buddy b;
     for (int l = 0; l < LOOKS; ++l) {
         init(&b, 0);
+        b.pet_choice = 1; /* original Kasper reference, independent of date */
         b.arml = b.armr = 0.12f, b.on_pet = l == L_EGG, b.blink_t = l == L_BLINK ? 0.08f : 0;
         for (int j = 0; j < CELL; ++j)
             for (int i = 0; i < CELL; ++i) {
