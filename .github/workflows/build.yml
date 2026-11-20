@@ -33,8 +33,9 @@ jobs:
           with Image.open(path) as image:
               assert image.size == (1344, 384)
               assert image.mode == "RGBA"
-              assert image.getbbox() is not None
               image.verify()
+          with Image.open(path) as image:
+              assert image.getbbox() is not None
           PY
       - name: Check host logic
         run: |
