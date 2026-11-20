@@ -184,7 +184,7 @@ typedef struct {
     int menu, sel, menu_down; /* Return's menu: open, its row, the row a touch went down on, plus 1 */
     float menu_t, menu_wheel; /* seconds open, the wheel's travel towards the next row */
     int on_pet;               /* Tamagotchi mode */
-    int pet_choice; /* Auto, Kasper, Frosty, Custom */
+    int pet_choice; /* Auto, Kasper, Frosty, Tom, Custom */
     tama tm;
     int now, save;            /* the clock, seconds since the epoch; the pet changed, to be kept */
     int icon, icon_down, stats; /* the bar's picked icon, the one a touch went down on plus 1, Stats */
@@ -762,13 +762,13 @@ static void pet_toggle(buddy *b) {
     emit(b, PUFF, b->x, b->y, 0, 0, 0.5f, 20);
     moods(b, b->on_pet ? NORMAL : HAPPY, b->on_pet ? 0 : 1.0f, NORMAL, 0);
 }
-/* Kasper and Frosty; user-supplied custom artwork remains available. */
+/* Original Kasper, procedural Frosty, bundled Tom, custom artwork. */
 static const char *const pet_names[] = {
-    "Auto", "Kasper", "Frosty", "Custom"
+    "Auto", "Kasper", "Frosty", "Tom", "Custom"
 };
-#define PET_CHOICES 4
+#define PET_CHOICES 5
 static const char *const pet_files[] = {
-    "", "", "snowman.png", ""
+    "", "", "", "tom.png", ""
 };
 /* Month from UTC epoch seconds; avoids libc/timezone dependencies on Q2. */
 static int utc_month(int now) {
@@ -2307,24 +2307,32 @@ static void load(buddy *b) {
     if (fd >= 0) sc(SYS_read, fd, (long)c, 4, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
     if (c[0] >= '0' && c[0] < '0' + PALS) b->pal = c[0] - '0';
     b->on_pet = c[1] == '1';
-    /* Version 3: only Auto, Kasper, Frosty, and Custom remain.
-     * Migrate version 2's Sakura/Wilson to Auto, preserving Custom.
-     * Older legacy state also maps removed characters to Auto. */
-    if (c[3] == '3') {
+    /* Saved state format v4: Auto(0), Kasper(1), Frosty(2),
+     * Tom(3), Custom(4). Preserve older Custom selections.
+     * The old v2 Sakura/Wilson slots are retired, not mapped to Tom.
+     */
+    if (c[3] == '4') {
         if (c[2] >= '0' && c[2] < '0' + PET_CHOICES)
             b->pet_choice = c[2] - '0';
+    } else if (c[3] == '3') {
+        switch (c[2]) {
+        case '1': b->pet_choice = 1; break;
+        case '2': b->pet_choice = 2; break;
+        case '3': b->pet_choice = 4; break; /* previous Custom */
+        default: b->pet_choice = 0; break;
+        }
     } else if (c[3] == '2') {
         switch (c[2]) {
         case '1': b->pet_choice = 1; break;
         case '2': b->pet_choice = 2; break;
-        case '5': b->pet_choice = 3; break; /* previous Custom */
+        case '5': b->pet_choice = 4; break; /* older Custom */
         default: b->pet_choice = 0; break;
         }
     } else {
         switch (c[2]) {
         case '1': b->pet_choice = 1; break;
         case '2': b->pet_choice = 2; break;
-        case '9': b->pet_choice = 3; break; /* legacy Custom */
+        case '9': b->pet_choice = 4; break; /* legacy Custom */
         default: b->pet_choice = 0; break;
         }
     }
@@ -2343,7 +2351,7 @@ static void switch_sheet(buddy *b) {
     int which = active_pet(b);
     if (which == 1 || which == 2) return; /* procedural Kasper / Frosty */
     char *path = sheet_path;
-    if (which != 3) {
+    if (which != 4) {
         path = pet_sheet_path;
         char *end = path;
         while (*end) ++end;
@@ -2352,7 +2360,7 @@ static void switch_sheet(buddy *b) {
     }
     int fd = (int)sc(SYS_open, (long)path, O_CLOEXEC, 0, 0, 0, 0);
     if (fd < 0) {
-        b->note = which == 3 ? "No buddy.png found" : "Pet art missing";
+        b->note = which == 4 ? "No buddy.png found" : "Pet art missing";
         b->note_t = 5;
         return;
     }
@@ -2366,7 +2374,7 @@ static void switch_sheet(buddy *b) {
 }
 static void save_state(const buddy *b) {
     char c[4] = { (char)('0' + b->pal), b->on_pet ? '1' : '0',
-                  (char)('0' + b->pet_choice), '3' };
+                  (char)('0' + b->pet_choice), '4' };
     int fd = (int)sc(SYS_open, (long)state_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644, 0, 0, 0);
     if (fd >= 0) sc(SYS_write, fd, (long)c, 4, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
 }
