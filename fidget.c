@@ -260,13 +260,15 @@ static float frosty_cap(float x, float y) {
     }
     return inside ? -d : d;
 }
-/* Curved fabric band across the forehead, not an oval or hollow ring.
- * Both borders bow downward towards the sides to follow the round head. */
+/* True curved hat cuff, not an ellipse: a softly rounded ribbon whose
+ * top and bottom follow the forehead, sagging at both sides. Use a rounded
+ * rectangle SDF in bent coordinates so the cap cannot look like an oval. */
 static float frosty_brim(float x, float y) {
-    float top = -84 + 0.003f * x * x;
-    float bottom = -65 + 0.0025f * x * x;
-    float strip = maxf(top - y, y - bottom);
-    return maxf(strip, ellipse(x, y + 75, 53, 17));
+    float mid = -75 + 0.005f * x * x;
+    float dx = absf(x) - 45;
+    float dy = absf(y - mid) - 6;
+    return minf(maxf(dx, dy), 0) +
+           len(maxf(dx, 0), maxf(dy, 0)) - 5;
 }
 static float frosty_hat(float x, float y) {
     float cap = frosty_cap(x, y);
@@ -1904,6 +1906,12 @@ static long png_stored(unsigned char *f, int ct, int depth, const char *pre, int
 
 /* the pet's rules: ./fidget check */
 static int check(void) {
+    /* Frosty's white hat cuff must be a bent band, not an elliptical brim.
+     * Check centre and descending sides while excluding the space below. */
+    assert(frosty_brim(0, -75) < 0);
+    assert(frosty_brim(49, -62) < 0);
+    assert(frosty_brim(0, -51) > 0);
+    assert(frosty_brim(0, -95) > 0);
     static buddy b;
     tama *g = &b.tm;
     {
