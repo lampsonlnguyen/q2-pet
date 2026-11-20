@@ -260,9 +260,17 @@ static float frosty_cap(float x, float y) {
     }
     return inside ? -d : d;
 }
+/* Curved fabric band across the forehead, not an oval or hollow ring.
+ * Both borders bow downward towards the sides to follow the round head. */
+static float frosty_brim(float x, float y) {
+    float top = -84 + 0.003f * x * x;
+    float bottom = -65 + 0.0025f * x * x;
+    float strip = maxf(top - y, y - bottom);
+    return maxf(strip, ellipse(x, y + 75, 53, 17));
+}
 static float frosty_hat(float x, float y) {
     float cap = frosty_cap(x, y);
-    float brim = ellipse(x, y + 78, 53, 9);
+    float brim = frosty_brim(x, y);
     float pom = len(x - 44, y + 109) - 11;
     return minf(minf(cap, brim), pom);
 }
@@ -1358,7 +1366,7 @@ static col frosty_col(const buddy *b, const palette *P, int l,
                   sat(0.48f - twig_d / 9));
     }
     if (hat_d < 0) {
-        float brim = ellipse(x, y + 78, 53, 9);
+        float brim = frosty_brim(x, y);
         float pom = len(x - 44, y + 109) - 11;
         float pale = 1 - smooth(-2, 2, minf(brim, pom));
         /* Soft gradient on the red cap, white fluffy brim and pom-pom. */
@@ -1371,12 +1379,6 @@ static col frosty_col(const buddy *b, const palette *P, int l,
     if (l < L_EGG && y > -55 && y < 17 && absf(x) < 53)
         bc = face(b, P, l, x, y, bc);
 
-    /* Small soft carrot between eyes and mouth; no hard outline. */
-    if (l < L_EGG) {
-        float nose = seg(x, y, 1, -6, 12, -2) - (2.6f - 0.1f * maxf(x, 0));
-        if (nose < 1.5f)
-            bc = cmix(bc, C(1, .66f, .35f), sat(0.5f - nose));
-    }
     return bc;
 }
 /* the ghost's colour at a point inside, looking l: shade's, speckled on an egg, faced otherwise */
