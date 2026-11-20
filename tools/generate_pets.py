@@ -44,7 +44,9 @@ def face(d, mood, kind):
     # All expressions remain visible on the character, even after shrinking
     # to the Q2's actual display size.
     y = 74
-    eyex = (75, 117)
+    # Kasper's original ghost uses eyes spaced 52 px apart, tall ovals,
+    # a cyan-lit lower rim and two white specular reflections.
+    eyex = (70, 122)
     if mood in (1,8):
         for x in eyex:
             lines(d, [(x-9,y),(x,y+2),(x+9,y)], "#1c2449", 3)
@@ -57,11 +59,17 @@ def face(d, mood, kind):
             lines(d, [(x+7,y-6),(x-7,y+8)], "#1c2449", 3)
     else:
         for x in eyex:
-            ellipse(d, (x-10,y-10,x+10,y+10), "#16264f")
-            ellipse(d, (x-6,y-7,x-1,y-2), "white")
-            ellipse(d, (x+3,y+3,x+5,y+5), "#acdbff")
+            # Recreate Kasper's procedural open-eye styling in Frosty's PNG:
+            # tall dark iris, bright cyan lower gradient, two catchlights.
+            ellipse(d, (x-14,y-17,x+14,y+17), "#83dfff")
+            ellipse(d, (x-13,y-16,x+13,y+16), "#14254b")
+            ellipse(d, (x-12,y+1,x+12,y+15), "#245d91")
+            ellipse(d, (x-10,y+7,x+10,y+15), "#56bdec")
+            ellipse(d, (x-11,y-15,x+11,y+5), "#14254b")
+            ellipse(d, (x-8,y-10,x-1,y-3), "#ffffff")
+            ellipse(d, (x+4,y+4,x+7,y+7), "#ffffff")
             if mood==5:
-                lines(d, [(x-9,y-13),(x+9,y-10)], "#172a4c", 3)
+                lines(d, [(x-12,y-18),(x+12,y-13)], "#172a4c", 3)
     if mood == 6:
         ellipse(d, (89,y+15,103,y+32), "#331c45")
     elif mood in (4,7):
@@ -73,9 +81,6 @@ def face(d, mood, kind):
         ellipse(d, (93,y+21,101,y+26), "#ff8598")
     else:
         lines(d, [(89,y+21),(94,y+23),(96,y+19),(99,y+23),(104,y+21)], "#182a4f", 2)
-    if mood not in (10,11):
-        ellipse(d, (52,y+12,66,y+21), "#ffb0cf")
-        ellipse(d, (126,y+12,140,y+21), "#ffb0cf")
 
 def body(kind, mood):
     if mood in (12,13): # Adult overlays: halo / horns
