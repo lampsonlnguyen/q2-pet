@@ -1,53 +1,45 @@
-# Q2 Pet
+# Q2 Pet — Four Seasons
 
-A seasonal and international virtual-pet collection for the Shanling Q2 / Q2 Pod.
-Forked from [DiamondBond's q2-fidget](https://github.com/DiamondBond/q2-fidget);
-its original ghost, Tamagotchi mechanics, touch interactions, and wheel controls are preserved.
+A seasonal virtual pet collection for Shanling Q2, based on
+[DiamondBond's original Buddy](https://github.com/DiamondBond/q2-fidget).
 
-## Character collection
+| Season | Character | Sprite source |
+| --- | --- | --- |
+| Spring (March–May) | Blossom | `pets/blossom.png` |
+| Summer (June–August) | Beach Ball with sunglasses | `pets/beach-ball.png` |
+| Autumn (September–November) | Ghost | Original built-in Buddy |
+| Winter (December–February) | Snowman | `pets/snowman.png` |
 
-| Character | Availability |
-| --- | --- |
-| Ghost | Halloween in automatic mode (Northern Hemisphere), or manually any time |
-| Snowman | Winter |
-| Blossom | Spring |
-| Sun | Summer |
-| Maple | Autumn |
-| Lantern | Lunar New Year-inspired, selectable year-round |
-| Moon | Universal nighttime companion, selectable year-round |
-| Diamond | Permanent year-round pet, selectable manually |
-| Custom | Your own `buddy.png` sprite sheet |
+The **Return** menu offers Continue, Colour, Tamagotchi, Pet, and Quit.
+Choose Pet repeatedly to cycle through Auto, Ghost, Snowman, Blossom,
+Beach Ball, and Custom. Auto uses the Q2's UTC month. You may override
+the season manually. There is **no hemisphere setting**, no fantasy
+animals, and no former Sun/Maple/Lantern/Moon/Diamond pets.
 
-Press **Return** for the menu and choose **Pet** repeatedly to cycle through
-Auto, Ghost, Snowman, Blossom, Sun, Maple, Lantern, Moon, Diamond, and Custom.
-Choose **Hemisphere: North/South** to rotate the four seasons six months apart.
-Auto uses the device's **UTC month**, and returns to a new seasonal pet
-without affecting Tamagotchi progress. Celebrations and the Diamond are
-available as manual choices; cultural calendars are not inferred from location.
+**Colour: Blue/Pink changes the artwork on all four pets**, not just
+the particle effects. Tamagotchi progress and the original touch/wheel
+interactions are kept. Existing saved selections from the older fork
+are migrated automatically. Custom `buddy.png` artwork still works.
 
-All new pets use the original 7×2, 1344×384 sprite sheet with 14 moods:
-normal, blink, happy, petted, surprised, annoyed, boo, dizzy, asleep, sad,
-sick, egg, halo, and horns. No new graphics decoder or Q2 runtime libraries.
+## Buddy template compatibility
 
-## Build and install
+Each generated seasonal pet is a **1344 x 384** RGBA PNG with **14 looks**
+in the original Buddy 7×2 layout. The anchor in each 192×192 cell is
+(96, 112). The look order is Normal, Blink, Happy, Petted, Surprised,
+Annoyed, Boo, Dizzy, Asleep, Sad, Sick, Egg, Halo, Horns.
 
-```sh
-python3 -m pip install Pillow
-./build.sh
-```
+Run `python3 tools/generate_pets.py` to regenerate the editable-looking
+art source sheets under `generated/pets/` (requires Pillow on the build
+computer only). `./build.sh` generates and bundles the PNGs alongside
+the `.fidget/q2-fidget` executable, outputting `dist/fidget.zip`.
+The original `buddy-template.png` remains the built-in Ghost sample.
 
-The build generates sprite sheets in `generated/pets/` and packages them in
-`dist/fidget.zip` as `.fidget/pets/*.png`. On-device app name: **Pet**,
-under **Library → Games**. The existing `.fidget` folder and saved
-Tamagotchi data remain compatible with DiamondBond's original app. GitHub
-Actions builds and tests the ZIP on every push; a `v*` tag publishes a release.
-
-To modify an expression, edit `tools/generate_pets.py` and rebuild.
-If a sheet fails to load, the original ghost is used as a fallback.
+GitHub Actions checks PNG sizes and builds an installable package on
+each push; find it under the successful workflow run's Artifacts.
 
 ---
 
-# Buddy
+# Original Buddy documentation
 
 A ghost buddy to poke on the Shanling Q2, for [Q2 Pod](https://github.com/DiamondBond/q2-pod).
 Install it from **System settings → App Store** and it shows up in **Library → Games**.
