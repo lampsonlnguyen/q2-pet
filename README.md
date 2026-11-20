@@ -1,19 +1,18 @@
 # Buddy — Kasper & Frosty
 
-A virtual pet app for Shanling Q2, based on [DiamondBond's original Buddy](https://github.com/DiamondBond/q2-fidget).
+A virtual pet app for the Shanling Q2 based on [DiamondBond's original Buddy](https://github.com/DiamondBond/q2-fidget).
 
-| Selection | Character | Artwork |
-| --- | --- | --- |
-| Auto | Frosty in December–February (UTC); Kasper otherwise | Automatic |
-| Kasper | Original ghost | Built-in |
-| Frosty | Round, two-snowball winter buddy | `pets/snowman.png` |
-| Custom | User-supplied art | `buddy.png` |
+- **Kasper** is the original ghost and retains its original drawing and interactions.
+- **Frosty** is rendered procedurally in `fidget.c`: two round snowballs, soft blue-white volumetric shading, the original ghost's eye and facial animation engine, a subtle red Santa hat, a small carrot nose and twig arms. **No scarf.**
+- **Auto** shows Frosty during December–February (UTC), and Kasper for the rest of the year.
+- **Custom** continues to read a user-provided `buddy.png` sprite sheet.
 
-Sakura and Wilson have been retired for now. Their sprite sheets are not generated or packaged. Existing saved Sakura/Wilson selections migrate to Auto; other selections are preserved, including Custom.
+The pet menu offers Auto, Kasper, Frosty, and Custom. Existing Tamagotchi progress and pet-selection migration are preserved.
 
-The **Return** menu offers Continue, Colour, Tamagotchi, Pet, and Quit. The Pet selection cycles through Auto, Kasper, Frosty, and Custom. Both buddies retain expressive animations, glow and ground shadow; Frosty uses a dedicated winter character template with a Santa hat, red scarf, carrot nose, twig arms, a round snow body, and 14 expressive states. The reference-inspired face has no cheek blush. The PNG layout remains compatible with Buddy's animation and Tamagotchi mechanics.
+## Building
 
-Frosty's sprite is a **1344 × 384** RGBA sheet with all **14 Buddy expressions**. Run `python3 tools/generate_pets.py` (which delegates to `tools/frosty_template.py`) to generate it or `./build.sh` to create `dist/fidget.zip`. Custom `buddy.png` artwork, Tamagotchi progress, and wheel/touch controls continue to work.
+Run `./build.sh` (Clang and LLD required). The installable output is `dist/fidget.zip`.
+No Pillow, sprite-generation step, or seasonal PNG assets are needed to build Frosty. Both included pets use Buddy's built-in framebuffer rendering, glow, and ground shadows. The old `tools/frosty_template.py` remains as an unused historical artwork experiment.
 
 ---
 
