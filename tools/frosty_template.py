@@ -31,6 +31,15 @@ def polygon(d, points, color, outline=None, width=1):
         d.line(p+[p[0]], fill=outline, width=width*SCALE, joint="curve")
 
 def frame(mood):
+    if mood == 11:
+        # Tamagotchi egg stage: no fully grown snowman before hatching.
+        result = Image.new("RGBA", (SIZE, SIZE))
+        d = ImageDraw.Draw(result)
+        ellipse(d, (65, 63, 127, 169), "#d6f4ff")
+        ellipse(d, (70, 67, 122, 161), "#ffffff")
+        ellipse(d, (89, 108, 94, 113), "#425568")
+        ellipse(d, (105, 108, 110, 113), "#425568")
+        return result
     if mood in (12, 13):
         result = Image.new("RGBA", (SIZE, SIZE))
         d = ImageDraw.Draw(result)
