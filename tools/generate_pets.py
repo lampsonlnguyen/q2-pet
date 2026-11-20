@@ -46,7 +46,7 @@ def overlay(base, mask, color):
 def face(d, mood, kind):
     # All expressions remain visible on the character, even after shrinking
     # to the Q2's actual display size.
-    y = 110 if kind != "snowman" else 76
+    y = 110 if kind != "snowman" else 74
     eyex = (75, 117)
     if mood in (1,8):
         for x in eyex:
@@ -96,21 +96,29 @@ def body(kind, mood):
     if mood == 11:
         ellipse(m, (57,45,135,174), 255)
     elif kind == "snowman":
-        # Two overlapping snowballs: small, round head above a larger body.
-        ellipse(m, (28,83,164,184), 255)
-        ellipse(m, (55,37,137,119), 255)
+        # Frosty: a large round head on an extra-plump body.
+        ellipse(m, (24,75,168,185), 255)
+        ellipse(m, (42,24,150,124), 255)
     elif kind == "blossom":
+        # Five petals with distinct notched tips, unlike round flower blobs.
         for i in range(5):
             theta = (i*72-90)*pi/180
-            cx,cy=96+39*cos(theta),109+39*sin(theta)
-            ellipse(m, (cx-34,cy-34,cx+34,cy+34), 255)
-        ellipse(m, (67,78,125,139), 255)
+            dx, dy = cos(theta), sin(theta)
+            tx, ty = -dy, dx
+            petal = [(96,109)]
+            for along, across in ((14,-23),(36,-31),(55,-23),
+                                  (50,-7),(45,0),(50,7),
+                                  (55,23),(36,31),(14,23)):
+                petal.append((96+dx*along+tx*across,
+                              109+dy*along+ty*across))
+            poly(m, petal, 255)
+        ellipse(m, (63,76,129,142), 255)
     elif kind == "wilson":
         ellipse(m, (36,45,156,165), 255)
     base, glow = PALETTES[kind]
     result = Image.new("RGBA", (SIZE,SIZE))
     # Soft ambient bloom plus a brighter close halo, like the original ghost.
-    for blur, strength in ((15, 0.36), (5, 0.58)):
+    for blur, strength in ((16, 0.34), (7, 0.56)):
         blurred = mask.filter(ImageFilter.GaussianBlur(blur*SCALE))
         halo = Image.new("RGBA", (SIZE, SIZE), glow)
         halo.putalpha(blurred.point(lambda a: min(255, int(a*strength))))
@@ -124,35 +132,48 @@ def body(kind, mood):
         return result
 
     if kind == "snowman":
-        # Frosty: fat rounded lower snowball, smaller round head, no accessories.
-        ellipse(d, (29,84,163,183), "#d7f4ff")
-        ellipse(d, (35,89,156,175), "#eefbff")
-        ellipse(d, (55,37,137,119), "#d8f5ff")
-        ellipse(d, (59,40,133,112), "#f6fdff")
-        ellipse(d, (66,44,122,86), "#ffffff")
+        # Frosty: oversized round head and a very fat body, no accessories.
+        ellipse(d, (24,76,168,184), "#d8f4ff")
+        ellipse(d, (30,82,160,176), "#eefbff")
+        ellipse(d, (42,24,150,124), "#d8f5ff")
+        ellipse(d, (48,28,144,116), "#eefcff")
+        ellipse(d, (58,34,132,92), "#ffffff")
     elif kind == "blossom":
-        # Sakura: five softly shaded petals and an uncluttered central face.
+        # Sakura: five authentic-looking notched cherry blossom petals.
         for i in range(5):
             theta = (i*72-90)*pi/180
-            cx, cy = 96+39*cos(theta), 109+39*sin(theta)
-            ellipse(d, (cx-29,cy-29,cx+29,cy+29), "#fba9d2")
-            ellipse(d, (cx-24,cy-25,cx+22,cy+21), "#ffd8ed")
-        ellipse(d, (64,81,128,145), "#ffc8e2")
-        ellipse(d, (71,86,121,133), "#ffdeee")
+            dx, dy = cos(theta), sin(theta)
+            tx, ty = -dy, dx
+            petal = [(96,109)]
+            for along, across in ((14,-23),(36,-31),(55,-23),
+                                  (50,-7),(45,0),(50,7),
+                                  (55,23),(36,31),(14,23)):
+                petal.append((96+dx*along+tx*across,
+                              109+dy*along+ty*across))
+            poly(d, petal, "#f7afd6", "#fbd3e8", 1)
+            lines(d, [(96+dx*18,109+dy*18),
+                      (96+dx*40,109+dy*40)], "#fbd9e9", 1)
+        ellipse(d, (62,78,130,143), "#ffd7e9")
+        ellipse(d, (70,86,122,136), "#ffedf5")
+        # Fine stamens kept away from the main facial features.
+        for angle in (-135,-95,-55,45,85,125):
+            theta = angle*pi/180
+            x2, y2 = 96+27*cos(theta), 110+27*sin(theta)
+            lines(d, [(96,110),(x2,y2)], "#ffe7aa", 1)
+            ellipse(d, (x2-2,y2-2,x2+2,y2+2), "#ffe58e")
     elif kind == "wilson":
-        # Wilson: a pale volleyball with broad curved panel seams, not
-        # beach-ball wedges. Panels stay readable at the Q2's small sizes.
+        # Wilson: pale volleyball with curved stitched-panel seams,
+        # rather than beach-ball radial wedges.
         colored = Image.new("RGBA", (SIZE, SIZE))
         wd = ImageDraw.Draw(colored)
-        ellipse(wd, (36,45,156,165), "#f7fcff")
-        ellipse(wd, (47,51,146,155), "#e9f7ff")
-        # Curved panels evoke volleyball stitching; avoid a central hub.
-        wd.arc(xy((43,47,150,156)), 18, 155, fill="#96c6e4", width=3*SCALE)
-        wd.arc(xy((47,46,150,154)), 197, 341, fill="#9fcbea", width=3*SCALE)
-        wd.arc(xy((63,40,138,171)), 58, 220, fill="#afd3e9", width=3*SCALE)
-        wd.arc(xy((56,40,135,166)), 235, 355, fill="#afd3e9", width=3*SCALE)
-        wd.arc(xy((44,72,151,151)), 225, 329, fill="#afd3e9", width=2*SCALE)
-        # Clip the panels so their seams cannot extend past the ball.
+        ellipse(wd, (36,45,156,165), "#f8fcff")
+        ellipse(wd, (43,51,148,156), "#f0f8ff")
+        seam = "#b9cde0"
+        wd.arc(xy((35,43,161,174)), 204, 333, fill=seam, width=3*SCALE)
+        wd.arc(xy((31,35,155,165)), 24, 151, fill=seam, width=3*SCALE)
+        wd.arc(xy((59,34,139,172)), 62, 213, fill=seam, width=3*SCALE)
+        wd.arc(xy((53,38,139,174)), 231, 358, fill=seam, width=3*SCALE)
+        wd.arc(xy((42,75,158,158)), 194, 331, fill=seam, width=3*SCALE)
         alpha = Image.composite(colored.getchannel("A"),
                                 Image.new("L", (SIZE, SIZE)), mask)
         colored.putalpha(alpha)
