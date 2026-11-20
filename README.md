@@ -3,7 +3,7 @@
 A virtual pet app for the Shanling Q2 based on [DiamondBond's original Buddy](https://github.com/DiamondBond/q2-fidget).
 
 - **Kasper** is the original ghost and retains its original drawing and interactions.
-- **Frosty** is rendered procedurally in `fidget.c`: two round snowballs, soft blue-white volumetric shading, the original ghost's eye and facial animation engine, a subtle red Santa hat, a small carrot nose and twig arms. **No scarf.**
+- **Frosty** is rendered procedurally in `fidget.c`: two round snowballs, soft blue-white volumetric shading, the original ghost's eye and facial animation engine, a soft red Santa hat with a curved white brim and subtle twig arms. **No scarf or carrot nose.**
 - **Tom** is a built-in white kawaii cat with 14 expression sprites, including sleep, dizzy, sick, egg, halo, and horns. Artwork is bundled as `pets/tom.png`.
 - **Auto** shows Frosty during December–February (UTC), and Kasper for the rest of the year. Tom is manually selectable.
 - **Custom** continues to read a user-provided `buddy.png` sprite sheet.
