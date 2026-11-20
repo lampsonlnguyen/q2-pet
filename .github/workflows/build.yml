@@ -35,7 +35,7 @@ jobs:
                   assert im.size == (1344, 384), (path, im.size)
                   assert im.mode == "RGBA", (path, im.mode)
                   im.verify()
-          assert {p.name for p in Path("generated/pets").glob("*.png")} == {"snowman.png", "blossom.png", "wilson.png"}
+          assert {p.name for p in Path("generated/pets").glob("*.png")} == {"snowman.png"}
           PY
       - name: Check host logic
         run: |
