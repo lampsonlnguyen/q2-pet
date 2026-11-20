@@ -32,7 +32,7 @@ jobs:
                   assert im.size == (1344, 384), (path, im.size)
                   assert im.mode == "RGBA", (path, im.mode)
                   im.verify()
-          assert len(list(Path("generated/pets").glob("*.png"))) == 7
+          assert len(list(Path("generated/pets").glob("*.png"))) == 3
           PY
       - name: Check host logic
         run: |
