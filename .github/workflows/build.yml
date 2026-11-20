@@ -22,12 +22,28 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang lld
+          python -m pip install Pillow
+      - name: Generate and validate Tom sprite
+        run: |
+          python tools/generate_tom.py
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          path = Path("generated/pets/tom.png")
+          with Image.open(path) as image:
+              assert image.size == (1344, 384)
+              assert image.mode == "RGBA"
+              assert image.getbbox() is not None
+              image.verify()
+          PY
       - name: Check host logic
         run: |
           cc -O2 -fno-math-errno -DHOST fidget.c -o /tmp/q2-pet-check
           /tmp/q2-pet-check check
       - name: Build Q2 binary and package
         run: ./build.sh
+      - name: Check Tom is bundled
+        run: unzip -l dist/fidget.zip | grep -q '.fidget/pets/tom.png'
       - name: Upload installable app
         uses: actions/upload-artifact@v4
         with:
