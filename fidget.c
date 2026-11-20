@@ -2117,7 +2117,7 @@ static int check(void) {
     /* buddy.png: the template, as ffmpeg compressed it (every row filter but Avg), decodes to the
      * looks it was made from. Run here, and ./template.sh after changing how the ghost looks */
     static unsigned char want[SHEET_W * SHEET_H * 4], png[SHEET_MAX];
-    template(want);
+    template(want, 1);
     assert(!sheet_read("buddy-template.png") && sheet_ok);
     for (int i = 0; i < SHEET_W * SHEET_H; ++i) {
         int a = (int)(sheet[i] >> 24);
