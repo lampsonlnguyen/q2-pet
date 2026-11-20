@@ -11,9 +11,9 @@ A virtual pet app for Shanling Q2, based on [DiamondBond's original Buddy](https
 
 Sakura and Wilson have been retired for now. Their sprite sheets are not generated or packaged. Existing saved Sakura/Wilson selections migrate to Auto; other selections are preserved, including Custom.
 
-The **Return** menu offers Continue, Colour, Tamagotchi, Pet, and Quit. The Pet selection cycles through Auto, Kasper, Frosty, and Custom. Both buddies retain expressive animations, glow and ground shadow; Frosty keeps its big head, round body, and accessory-free appearance.
+The **Return** menu offers Continue, Colour, Tamagotchi, Pet, and Quit. The Pet selection cycles through Auto, Kasper, Frosty, and Custom. Both buddies retain expressive animations, glow and ground shadow; Frosty uses a dedicated winter character template with a Santa hat, red scarf, carrot nose, twig arms, a round snow body, and 14 expressive states. The reference-inspired face has no cheek blush. The PNG layout remains compatible with Buddy's animation and Tamagotchi mechanics.
 
-Frosty's sprite is a **1344 × 384** RGBA sheet with all **14 Buddy expressions**. Run `python3 tools/generate_pets.py` to generate it or `./build.sh` to create `dist/fidget.zip`. Custom `buddy.png` artwork, Tamagotchi progress, and wheel/touch controls continue to work.
+Frosty's sprite is a **1344 × 384** RGBA sheet with all **14 Buddy expressions**. Run `python3 tools/generate_pets.py` (which delegates to `tools/frosty_template.py`) to generate it or `./build.sh` to create `dist/fidget.zip`. Custom `buddy.png` artwork, Tamagotchi progress, and wheel/touch controls continue to work.
 
 ---
 
