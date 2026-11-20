@@ -184,6 +184,7 @@ typedef struct {
     int menu, sel, menu_down; /* Return's menu: open, its row, the row a touch went down on, plus 1 */
     float menu_t, menu_wheel; /* seconds open, the wheel's travel towards the next row */
     int on_pet;               /* Tamagotchi mode */
+    int pet_choice, hemisphere; /* 0 = automatic / northern; explicit pets 1..8, custom 9 */
     tama tm;
     int now, save;            /* the clock, seconds since the epoch; the pet changed, to be kept */
     int icon, icon_down, stats; /* the bar's picked icon, the one a touch went down on plus 1, Stats */
@@ -698,7 +699,7 @@ static void pop_read(const char *s) { /* anything short of a whole value: Buddy'
 
 /* Return's menu: Q2 Pod's pop-up when it says which (a title, then rows of POP_ROW), else a dark
  * box framed in the tone, the row picked in the tone and the others grey */
-#define MENU_ROWS 4
+#define MENU_ROWS 6
 #define MENU_W 281
 #define MENU_X ((W - MENU_W) / 2)
 #define MENU_STEP 28 /* the wheel's raw travel a row: as a menu tick at 50% sensitivity */
@@ -727,11 +728,49 @@ static void pet_toggle(buddy *b) {
     emit(b, PUFF, b->x, b->y, 0, 0, 0.5f, 20);
     moods(b, b->on_pet ? NORMAL : HAPPY, b->on_pet ? 0 : 1.0f, NORMAL, 0);
 }
+static const char *const pet_names[] = {
+    "Auto", "Ghost", "Snowman", "Blossom", "Sun", "Maple", "Lantern", "Moon", "Diamond", "Custom"
+};
+#define PET_CHOICES 10
+static const char *const pet_files[] = {
+    "", "", "snowman.png", "blossom.png", "sun.png", "maple.png",
+    "lantern.png", "moon.png", "diamond.png", ""
+};
+/* Civil date algorithm for UTC seasons; no libc/timezone database on this freestanding app. */
+static int utc_month(int now) {
+    int z = now / 86400 + 719468;
+    int era = z / 146097, doe = z - era * 146097;
+    int yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    int doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    int mp = (5 * doy + 2) / 153;
+    return mp + (mp < 10 ? 3 : -9);
+}
+static int active_pet(const buddy *b) {
+    if (b->pet_choice) return b->pet_choice;
+    int month = utc_month(b->now);
+    if (b->hemisphere) month = month > 6 ? month - 6 : month + 6;
+    if (month == 12 || month <= 2) return 2; /* snowman */
+    if (month <= 5) return 3; /* blossom */
+    if (month <= 8) return 4; /* sun */
+    if (month == 10 && !b->hemisphere) return 1; /* Halloween ghost */
+    return 5; /* maple leaf */
+}
+#ifdef HOST
+static void switch_sheet(buddy *b) { (void)b; }
+#else
+static void switch_sheet(buddy *b);
+#endif
 static void menu_pick(buddy *b) {
     if (b->sel == 0) b->menu = 0;
     else if (b->sel == 1) recolour(b);
     else if (b->sel == 2) pet_toggle(b);
-    else b->quit = 1;
+    else if (b->sel == 3) {
+        b->pet_choice = (b->pet_choice + 1) % PET_CHOICES;
+        switch_sheet(b);
+    } else if (b->sel == 4) {
+        b->hemisphere = !b->hemisphere;
+        switch_sheet(b);
+    } else b->quit = 1;
 }
 static void menu_input(buddy *b, char kind, char what, int x, int y) {
     if (kind == 'k' && what == 'u' && x == KEY_RETURN) b->menu = 0;
@@ -1516,10 +1555,12 @@ static void draw_menu(const buddy *b, unsigned *fb) {
     const palette *P = &pals[b->pal];
     float in = sat(b->menu_t / 0.12f);
     dim(fb, 0.55f * in);
-    char colour[24], pet[24];
+    char colour[24], pet[24], selected[32], region[30];
     put(put(colour, "Colour: "), pal_names[b->pal]);
     put(put(pet, "Tamagotchi: "), b->on_pet ? "On" : "Off");
-    const char *rows[MENU_ROWS] = { "Continue", colour, pet, "Quit" };
+    put(put(selected, "Pet: "), pet_names[b->pet_choice]);
+    put(put(region, "Hemisphere: "), b->hemisphere ? "South" : "North");
+    const char *rows[MENU_ROWS] = { "Continue", colour, pet, selected, region, "Quit" };
     if (pop.style) {
         pop_box(fb, "Buddy", rows, MENU_ROWS, menu_y(), b->sel, in);
         return;
@@ -1788,13 +1829,13 @@ static int check(void) {
         /* each style's rows are where a touch finds them, and its pop-ups paint as Q2 Pod's: a pixel of
          * the chosen row's band, bar or dot, of the box, and of Classic's strip */
         static unsigned fb[W * H];
-        const char *rows[MENU_ROWS] = { "Continue", "Colour: Blue", "Tamagotchi: Off", "Quit" };
+        const char *rows[MENU_ROWS] = { "Continue", "Colour: Blue", "Tamagotchi: Off", "Pet: Auto", "Hemisphere: North", "Quit" };
         for (int style = POP_OWN; style <= POP_CLASSIC; ++style) {
             pop.style = style;
             for (int c = 0; c < POP_ROW; ++c) pop.head[c] = C(0, 0, (float)c / 64), pop.band[c] = C(0, (float)c / 64, 1);
             pop.box = C(1, 1, 1), pop.frame = C(.5f, .5f, .5f), pop.pick = C(1, 0, 0);
             int y = menu_y(), top = y + menu_top(), rh = menu_row_h();
-            assert(menu_h(5) < H && y >= 0 && menu_row(W / 2, (float)(top - 1)) == -1 && menu_row(W / 2, (float)(top + 4 * rh)) == -1);
+            assert(menu_h(MENU_ROWS) < H && y >= 0 && menu_row(W / 2, (float)(top - 1)) == -1 && menu_row(W / 2, (float)(top + MENU_ROWS * rh)) == -1);
             for (int r = 0; r < MENU_ROWS; ++r) assert(menu_row(W / 2, (float)(top + r * rh + rh / 2)) == r);
             for (int k = 0; k < 2; ++k) { /* a tap just above the box closes it; one on it, off its rows, doesn't */
                 static buddy t;
@@ -2168,43 +2209,66 @@ static int now_s(void) {
 
 /* Kept beside the binary: "<dir>/state", the colour's digit and Tamagotchi's; "<dir>/pet", the pet;
  * and the user's own "<dir>/buddy.png", read only */
-static char state_path[200], pet_path[200], pet_new[200], sheet_path[200];
+static char state_path[200], pet_path[200], pet_new[200], sheet_path[200], pet_sheet_path[200];
 static void paths(const char *argv0) {
     int n = 0, slash = -1;
     for (; argv0[n] && n < 180; ++n)
         if (argv0[n] == '/') slash = n;
-    for (int i = 0; i <= slash; ++i) state_path[i] = pet_path[i] = pet_new[i] = sheet_path[i] = argv0[i];
+    for (int i = 0; i <= slash; ++i) state_path[i] = pet_path[i] = pet_new[i] = sheet_path[i] = pet_sheet_path[i] = argv0[i];
     put(state_path + slash + 1, "state");
     put(pet_path + slash + 1, "pet");
     put(pet_new + slash + 1, "pet.new");
     put(sheet_path + slash + 1, "buddy.png");
+    put(pet_sheet_path + slash + 1, "pets/");
 }
 static void load(buddy *b) {
-    char c[2] = { 0, 0 };
+    char c[4] = { 0, 0, 0, 0 };
     int fd = (int)sc(SYS_open, (long)state_path, O_CLOEXEC, 0, 0, 0, 0);
-    if (fd >= 0) sc(SYS_read, fd, (long)c, 2, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
+    if (fd >= 0) sc(SYS_read, fd, (long)c, 4, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
     if (c[0] >= '0' && c[0] < '0' + PALS) b->pal = c[0] - '0';
     b->on_pet = c[1] == '1';
+    if (c[2] >= '0' && c[2] <= '9') b->pet_choice = c[2] - '0';
+    if (c[3] == '1') b->hemisphere = 1;
     long n = 0;
     fd = (int)sc(SYS_open, (long)pet_path, O_CLOEXEC, 0, 0, 0, 0);
     if (fd >= 0) n = sc(SYS_read, fd, (long)&b->tm, sizeof b->tm, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
     if (n != (long)sizeof b->tm || !tama_ok(&b->tm)) b->tm = (tama){ 0 };
     if (b->on_pet && b->tm.magic != TAMA_MAGIC) tama_new(&b->tm, b->now);
-    fd = (int)sc(SYS_open, (long)sheet_path, O_CLOEXEC, 0, 0, 0, 0);
-    if (fd < 0) return; /* none: the ghost, nothing said */
-    long k;
-    for (n = 0; n < SHEET_MAX && (k = sc(SYS_read, fd, (long)(sheet_file + n), SHEET_MAX - n, 0, 0, 0)) > 0;) n += k;
+    switch_sheet(b);
+}
+
+/* Load only the selected sprite sheet; the built-in ghost stays the fallback.
+ * The user's custom buddy.png remains available as its own selection. */
+static void switch_sheet(buddy *b) {
+    sheet_ok = 0;
+    int which = active_pet(b);
+    if (which == 1) return;
+    char *path = sheet_path;
+    if (which != 9) {
+        path = pet_sheet_path;
+        char *end = path;
+        while (*end) ++end;
+        put(end, pet_files[which]);
+    }
+    int fd = (int)sc(SYS_open, (long)path, O_CLOEXEC, 0, 0, 0, 0);
+    if (fd < 0) {
+        b->note = which == 9 ? "No buddy.png found" : "Pet art missing";
+        b->note_t = 5;
+        return;
+    }
+    long n = 0, k;
+    for (; n < SHEET_MAX && (k = sc(SYS_read, fd, (long)(sheet_file + n), SHEET_MAX - n, 0, 0, 0)) > 0;) n += k;
     sc(SYS_close, fd, 0, 0, 0, 0, 0);
     const char *why = sheet_load(n);
     if (why) b->note = why, b->note_t = 6;
-    /* the scratch's 5 MB back; whole 64 KB only, as what lies past either end isn't ours */
     sc(SYS_madvise, (long)sheet_file, (long)(sizeof sheet_file & ~0xffffu), MADV_DONTNEED, 0, 0, 0);
     sc(SYS_madvise, (long)sheet_raw, (long)(sizeof sheet_raw & ~0xffffu), MADV_DONTNEED, 0, 0, 0);
 }
 static void save_state(const buddy *b) {
-    char c[2] = { (char)('0' + b->pal), b->on_pet ? '1' : '0' };
+    char c[4] = { (char)('0' + b->pal), b->on_pet ? '1' : '0',
+                  (char)('0' + b->pet_choice), (char)('0' + b->hemisphere) };
     int fd = (int)sc(SYS_open, (long)state_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644, 0, 0, 0);
-    if (fd >= 0) sc(SYS_write, fd, (long)c, 2, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
+    if (fd >= 0) sc(SYS_write, fd, (long)c, 4, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
 }
 /* whole or not at all: a TERM or a pulled battery mid-write keeps the last one */
 static void save_pet(const tama *g) {
@@ -2246,7 +2310,8 @@ int main(int argc, char **argv) {
     init(&bud, 0);
     bud.now = now_s();
     load(&bud);
-    int pal = bud.pal, on_pet = bud.on_pet;
+    int pal = bud.pal, on_pet = bud.on_pet, pet_choice = bud.pet_choice, hemisphere = bud.hemisphere;
+    int displayed = active_pet(&bud);
     long long last = now_ms(), acc = 0, next = last, saved = last;
     while (!bud.quit) {
         long long t = now_ms();
@@ -2275,7 +2340,11 @@ int main(int argc, char **argv) {
         back = back ? 0 : W;
         next = t + (lively(&bud) ? 16 : 33);
         /* now: a held Return's TERM saves nothing */
-        if (bud.pal != pal || bud.on_pet != on_pet) pal = bud.pal, on_pet = bud.on_pet, save_state(&bud);
+        if (bud.pal != pal || bud.on_pet != on_pet || bud.pet_choice != pet_choice || bud.hemisphere != hemisphere) {
+            pal = bud.pal, on_pet = bud.on_pet, pet_choice = bud.pet_choice, hemisphere = bud.hemisphere;
+            save_state(&bud);
+        }
+        if (active_pet(&bud) != displayed) displayed = active_pet(&bud), switch_sheet(&bud);
         if (bud.save || (bud.on_pet && t - saved > 5 * 60 * 1000)) bud.save = 0, saved = t, save_pet(&bud.tm);
     }
     if (bud.tm.magic == TAMA_MAGIC) save_pet(&bud.tm);
