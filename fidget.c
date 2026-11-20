@@ -184,7 +184,7 @@ typedef struct {
     int menu, sel, menu_down; /* Return's menu: open, its row, the row a touch went down on, plus 1 */
     float menu_t, menu_wheel; /* seconds open, the wheel's travel towards the next row */
     int on_pet;               /* Tamagotchi mode */
-    int pet_choice; /* Auto, Kasper, Frosty, Sakura, Wilson, Custom */
+    int pet_choice; /* Auto, Kasper, Frosty, Custom */
     tama tm;
     int now, save;            /* the clock, seconds since the epoch; the pet changed, to be kept */
     int icon, icon_down, stats; /* the bar's picked icon, the one a touch went down on plus 1, Stats */
@@ -728,13 +728,13 @@ static void pet_toggle(buddy *b) {
     emit(b, PUFF, b->x, b->y, 0, 0, 0.5f, 20);
     moods(b, b->on_pet ? NORMAL : HAPPY, b->on_pet ? 0 : 1.0f, NORMAL, 0);
 }
-/* Four seasonal mascots; custom artwork remains an option. */
+/* Kasper and Frosty; user-supplied custom artwork remains available. */
 static const char *const pet_names[] = {
-    "Auto", "Kasper", "Frosty", "Sakura", "Wilson", "Custom"
+    "Auto", "Kasper", "Frosty", "Custom"
 };
-#define PET_CHOICES 6
+#define PET_CHOICES 4
 static const char *const pet_files[] = {
-    "", "", "snowman.png", "blossom.png", "wilson.png", ""
+    "", "", "snowman.png", ""
 };
 /* Month from UTC epoch seconds; avoids libc/timezone dependencies on Q2. */
 static int utc_month(int now) {
@@ -748,10 +748,8 @@ static int utc_month(int now) {
 static int active_pet(const buddy *b) {
     if (b->pet_choice) return b->pet_choice;
     int month = utc_month(b->now);
-    if (month == 12 || month <= 2) return 2; /* winter */
-    if (month <= 5) return 3; /* spring */
-    if (month <= 8) return 4; /* summer */
-    return 1; /* autumn: original ghost */
+    if (month == 12 || month <= 2) return 2; /* winter: Frosty */
+    return 1; /* other months: Kasper */
 }
 #ifdef HOST
 static void switch_sheet(buddy *b) { (void)b; }
@@ -2234,18 +2232,25 @@ static void load(buddy *b) {
     if (fd >= 0) sc(SYS_read, fd, (long)c, 4, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
     if (c[0] >= '0' && c[0] < '0' + PALS) b->pal = c[0] - '0';
     b->on_pet = c[1] == '1';
-    /* Explicit state marker migrates old ten-character saved choices. */
-    if (c[3] == '2') {
+    /* Version 3: only Auto, Kasper, Frosty, and Custom remain.
+     * Migrate version 2's Sakura/Wilson to Auto, preserving Custom.
+     * Older legacy state also maps removed characters to Auto. */
+    if (c[3] == '3') {
         if (c[2] >= '0' && c[2] < '0' + PET_CHOICES)
             b->pet_choice = c[2] - '0';
+    } else if (c[3] == '2') {
+        switch (c[2]) {
+        case '1': b->pet_choice = 1; break;
+        case '2': b->pet_choice = 2; break;
+        case '5': b->pet_choice = 3; break; /* previous Custom */
+        default: b->pet_choice = 0; break;
+        }
     } else {
         switch (c[2]) {
-        case '1': b->pet_choice = 1; break; /* Ghost */
-        case '2': b->pet_choice = 2; break; /* Snowman */
-        case '3': b->pet_choice = 3; break; /* Blossom */
-        case '4': b->pet_choice = 4; break; /* old Sun -> Beach Ball */
-        case '9': b->pet_choice = 5; break; /* Custom */
-        default: b->pet_choice = 0; break; /* removed pets -> Auto */
+        case '1': b->pet_choice = 1; break;
+        case '2': b->pet_choice = 2; break;
+        case '9': b->pet_choice = 3; break; /* legacy Custom */
+        default: b->pet_choice = 0; break;
         }
     }
     long n = 0;
@@ -2263,7 +2268,7 @@ static void switch_sheet(buddy *b) {
     int which = active_pet(b);
     if (which == 1) return;
     char *path = sheet_path;
-    if (which != 5) {
+    if (which != 3) {
         path = pet_sheet_path;
         char *end = path;
         while (*end) ++end;
@@ -2272,7 +2277,7 @@ static void switch_sheet(buddy *b) {
     }
     int fd = (int)sc(SYS_open, (long)path, O_CLOEXEC, 0, 0, 0, 0);
     if (fd < 0) {
-        b->note = which == 5 ? "No buddy.png found" : "Pet art missing";
+        b->note = which == 3 ? "No buddy.png found" : "Pet art missing";
         b->note_t = 5;
         return;
     }
@@ -2286,7 +2291,7 @@ static void switch_sheet(buddy *b) {
 }
 static void save_state(const buddy *b) {
     char c[4] = { (char)('0' + b->pal), b->on_pet ? '1' : '0',
-                  (char)('0' + b->pet_choice), '2' };
+                  (char)('0' + b->pet_choice), '3' };
     int fd = (int)sc(SYS_open, (long)state_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644, 0, 0, 0);
     if (fd >= 0) sc(SYS_write, fd, (long)c, 4, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
 }
