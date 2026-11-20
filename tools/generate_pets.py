@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render Q2 Pet sprite sheets (7 columns x 2 rows of 192px RGBA cells).
+"""Render Buddy seasonal sprite sheets (7 columns x 2 rows of 192px RGBA cells).
 
 The character centre is (96,112) per cell, matching DiamondBond's Buddy
 template. All 14 states are rendered, with a transparent background.
@@ -20,7 +20,7 @@ STATES = ["normal","blink","happy","petted","surprised","annoyed","boo",
 PALETTES = {
     "snowman": ("#efffff", "#73c8ff"),
     "blossom": ("#ffb6de", "#f566b3"),
-    "beach-ball": ("#fff8dc", "#61beff"),
+    "wilson": ("#f8fcff", "#a5d9ff"),
 }
 
 def xy(vals):
@@ -46,16 +46,9 @@ def overlay(base, mask, color):
 def face(d, mood, kind):
     # All expressions remain visible on the character, even after shrinking
     # to the Q2's actual display size.
-    y = 110 if kind != "snowman" else 80
+    y = 110 if kind != "snowman" else 76
     eyex = (75, 117)
-    if kind == "beach-ball":
-        # Blue sunglasses with dark navy lenses. Blink/dizzy still affects the mouth.
-        poly(d, [(56,y-14),(92,y-12),(87,y+6),(64,y+6)], "#112d65", "#78c8ff", 3)
-        poly(d, [(100,y-12),(137,y-14),(129,y+6),(107,y+6)], "#112d65", "#78c8ff", 3)
-        lines(d, [(90,y-11),(100,y-11)], "#0f2752", 4)
-        lines(d, [(65,y-10),(75,y-10)], "#d9f3ff", 3)
-        lines(d, [(109,y-10),(119,y-10)], "#d9f3ff", 3)
-    elif mood in (1,8):
+    if mood in (1,8):
         for x in eyex:
             lines(d, [(x-9,y),(x,y+2),(x+9,y)], "#1c2449", 3)
     elif mood in (2,3):
@@ -104,22 +97,24 @@ def body(kind, mood):
         ellipse(m, (57,45,135,174), 255)
     elif kind == "snowman":
         # Two overlapping snowballs: small, round head above a larger body.
-        ellipse(m, (42,94,150,178), 255)
-        ellipse(m, (56,42,136,122), 255)
+        ellipse(m, (28,83,164,184), 255)
+        ellipse(m, (55,37,137,119), 255)
     elif kind == "blossom":
         for i in range(5):
             theta = (i*72-90)*pi/180
             cx,cy=96+39*cos(theta),109+39*sin(theta)
             ellipse(m, (cx-34,cy-34,cx+34,cy+34), 255)
         ellipse(m, (67,78,125,139), 255)
-    elif kind == "beach-ball":
+    elif kind == "wilson":
         ellipse(m, (36,45,156,165), 255)
     base, glow = PALETTES[kind]
     result = Image.new("RGBA", (SIZE,SIZE))
-    blurred = mask.filter(ImageFilter.GaussianBlur(10*SCALE))
-    halo = Image.new("RGBA", (SIZE,SIZE), glow)
-    halo.putalpha(blurred.point(lambda a: a//2))
-    result.alpha_composite(halo)
+    # Soft ambient bloom plus a brighter close halo, like the original ghost.
+    for blur, strength in ((15, 0.36), (5, 0.58)):
+        blurred = mask.filter(ImageFilter.GaussianBlur(blur*SCALE))
+        halo = Image.new("RGBA", (SIZE, SIZE), glow)
+        halo.putalpha(blurred.point(lambda a: min(255, int(a*strength))))
+        result.alpha_composite(halo)
     overlay(result, mask, base)
     d=ImageDraw.Draw(result)
 
@@ -129,41 +124,40 @@ def body(kind, mood):
         return result
 
     if kind == "snowman":
-        # No scarf, hat, twig arms, buttons, or other accessories.
-        # Gentle white/cyan layering separates the two clean snowballs.
-        ellipse(d, (43,96,149,177), "#e7faff")
-        ellipse(d, (49,100,141,167), "#f3fdff")
-        ellipse(d, (56,42,136,122), "#ecfbff")
-        ellipse(d, (64,48,123,98), "#ffffff")
+        # Frosty: fat rounded lower snowball, smaller round head, no accessories.
+        ellipse(d, (29,84,163,183), "#d7f4ff")
+        ellipse(d, (35,89,156,175), "#eefbff")
+        ellipse(d, (55,37,137,119), "#d8f5ff")
+        ellipse(d, (59,40,133,112), "#f6fdff")
+        ellipse(d, (66,44,122,86), "#ffffff")
     elif kind == "blossom":
-        # 5 separate glowing petals with line-work and golden pollen.
+        # Sakura: five softly shaded petals and an uncluttered central face.
         for i in range(5):
-            theta=(i*72-90)*pi/180
-            cx,cy=96+39*cos(theta),109+39*sin(theta)
-            ellipse(d,(cx-22,cy-21,cx+21,cy+22),"#ffc2e3")
-            lines(d,[(96,106),(96+48*cos(theta),109+48*sin(theta))],"#fa84bb",2)
-        for x,y in [(88,84),(104,84),(79,94),(113,94),(96,76)]:
-            ellipse(d,(x-4,y-4,x+4,y+4),"#ffd452")
-            ellipse(d,(x-2,y-3,x+1,y),"#fff3a8")
-    elif kind == "beach-ball":
-        # Segmented red / yellow / blue / white beach ball.
-        # Clip the sector illustration exactly to the circular silhouette.
-        colored=Image.new("RGBA",(SIZE,SIZE))
-        wd=ImageDraw.Draw(colored)
-        cx,cy=96,105
-        palette=["#ffffff","#fa6269","#ffffff","#ffd54c","#ffffff","#51aefe"]
-        for i in range(6):
-            a=(i*2*pi/6)-pi/2
-            b=((i+1)*2*pi/6)-pi/2
-            points=[(cx,cy)] + [(cx+79*cos(a+(b-a)*t/12),cy+79*sin(a+(b-a)*t/12))
-                                   for t in range(13)]
-            poly(wd,points,palette[i])
-        colored.putalpha(Image.composite(colored.getchannel("A"),Image.new("L",(SIZE,SIZE)),mask))
+            theta = (i*72-90)*pi/180
+            cx, cy = 96+39*cos(theta), 109+39*sin(theta)
+            ellipse(d, (cx-29,cy-29,cx+29,cy+29), "#fba9d2")
+            ellipse(d, (cx-24,cy-25,cx+22,cy+21), "#ffd8ed")
+        ellipse(d, (64,81,128,145), "#ffc8e2")
+        ellipse(d, (71,86,121,133), "#ffdeee")
+    elif kind == "wilson":
+        # Wilson: a pale volleyball with broad curved panel seams, not
+        # beach-ball wedges. Panels stay readable at the Q2's small sizes.
+        colored = Image.new("RGBA", (SIZE, SIZE))
+        wd = ImageDraw.Draw(colored)
+        ellipse(wd, (36,45,156,165), "#f7fcff")
+        ellipse(wd, (47,51,146,155), "#e9f7ff")
+        # Curved panels evoke volleyball stitching; avoid a central hub.
+        wd.arc(xy((43,47,150,156)), 18, 155, fill="#96c6e4", width=3*SCALE)
+        wd.arc(xy((47,46,150,154)), 197, 341, fill="#9fcbea", width=3*SCALE)
+        wd.arc(xy((63,40,138,171)), 58, 220, fill="#afd3e9", width=3*SCALE)
+        wd.arc(xy((56,40,135,166)), 235, 355, fill="#afd3e9", width=3*SCALE)
+        wd.arc(xy((44,72,151,151)), 225, 329, fill="#afd3e9", width=2*SCALE)
+        # Clip the panels so their seams cannot extend past the ball.
+        alpha = Image.composite(colored.getchannel("A"),
+                                Image.new("L", (SIZE, SIZE)), mask)
+        colored.putalpha(alpha)
         result.alpha_composite(colored)
-        d=ImageDraw.Draw(result)
-        ellipse(d,(85,91,108,112),"#fffefa")
-        ellipse(d,(89,95,103,104),"#f4f5ff")
-        # Sunglasses are drawn in face() at a consistent fixed position.
+        d = ImageDraw.Draw(result)
     face(d,mood,kind)
     if mood==10:
         # Sick expression; retained so the original engine can add its green tint.
