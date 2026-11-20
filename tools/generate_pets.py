@@ -46,7 +46,7 @@ def overlay(base, mask, color):
 def face(d, mood, kind):
     # All expressions remain visible on the character, even after shrinking
     # to the Q2's actual display size.
-    y = 110 if kind != "snowman" else 91
+    y = 110 if kind != "snowman" else 80
     eyex = (75, 117)
     if kind == "beach-ball":
         # Blue sunglasses with dark navy lenses. Blink/dizzy still affects the mouth.
@@ -103,8 +103,9 @@ def body(kind, mood):
     if mood == 11:
         ellipse(m, (57,45,135,174), 255)
     elif kind == "snowman":
-        ellipse(m, (43,97,149,172), 255)
-        ellipse(m, (49,46,143,139), 255)
+        # Two overlapping snowballs: small, round head above a larger body.
+        ellipse(m, (42,94,150,178), 255)
+        ellipse(m, (56,42,136,122), 255)
     elif kind == "blossom":
         for i in range(5):
             theta = (i*72-90)*pi/180
@@ -128,21 +129,12 @@ def body(kind, mood):
         return result
 
     if kind == "snowman":
-        # Two snowballs, vivid blue winter cap, contrasting red scarf.
-        ellipse(d, (50,52,142,133), "#f1fdff")
-        ellipse(d, (65,54,90,72), "#ffffff")
-        lines(d, [(44,121),(23,104),(18,110)], "#b57740", 5)
-        lines(d, [(148,121),(169,104),(174,110)], "#b57740", 5)
-        ellipse(d, (89,142,100,153), "#3479d9")
-        ellipse(d, (89,157,100,168), "#3479d9")
-        lines(d, [(57,123),(134,124)], "#ef3d51", 13)
-        poly(d, [(117,119),(136,123),(137,164),(119,164)], "#f23c51")
-        lines(d, [(123,126),(124,154)], "#ff7d8a", 2)
-        poly(d, [(51,66),(60,32),(132,32),(143,66)], "#3189e5", "#9cddff", 2)
-        for x in (70,85,101,116):
-            lines(d, [(x,39),(x-3,65)], "#61b6fd", 2)
-        ellipse(d, (80,17,111,41), "#ffffff")
-        ellipse(d, (87,18,106,29), "#d8f7ff")
+        # No scarf, hat, twig arms, buttons, or other accessories.
+        # Gentle white/cyan layering separates the two clean snowballs.
+        ellipse(d, (43,96,149,177), "#e7faff")
+        ellipse(d, (49,100,141,167), "#f3fdff")
+        ellipse(d, (56,42,136,122), "#ecfbff")
+        ellipse(d, (64,48,123,98), "#ffffff")
     elif kind == "blossom":
         # 5 separate glowing petals with line-work and golden pollen.
         for i in range(5):
