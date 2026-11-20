@@ -244,10 +244,26 @@ static float frosty_snow(float x, float y) {
     float belly = ellipse(x, y - 33, 65, 55);
     return smin(head, belly, 3);
 }
+/* A floppy Santa cap with a tapered, curved silhouette instead of
+ * overlapping round blobs. Negative values are inside the polygon. */
+static float frosty_cap(float x, float y) {
+    static const float px[] = {-47, -37, -12,   7,  27,  42,  31,  14,  42};
+    static const float py[] = {-79,-108,-130,-132,-120,-108,-101,-108, -79};
+    float d = 10000;
+    int inside = 0;
+    for (int i = 0; i < 9; ++i) {
+        int j = (i + 1) % 9;
+        d = minf(d, seg(x, y, px[i], py[i], px[j], py[j]));
+        if ((py[i] > y) != (py[j] > y) &&
+            x < px[i] + (px[j] - px[i]) * (y - py[i]) / (py[j] - py[i]))
+            inside = !inside;
+    }
+    return inside ? -d : d;
+}
 static float frosty_hat(float x, float y) {
-    float cap = ellipse(x + 11, y + 83, 43, 26);
-    float brim = ellipse(x, y + 76, 55, 10);
-    float pom = len(x - 39, y + 102) - 10;
+    float cap = frosty_cap(x, y);
+    float brim = ellipse(x, y + 78, 53, 9);
+    float pom = len(x - 44, y + 109) - 11;
     return minf(minf(cap, brim), pom);
 }
 static float frosty_twigs(float x, float y) {
@@ -1342,13 +1358,14 @@ static col frosty_col(const buddy *b, const palette *P, int l,
                   sat(0.48f - twig_d / 9));
     }
     if (hat_d < 0) {
-        float brim = ellipse(x, y + 76, 55, 10);
-        float pom = len(x - 39, y + 102) - 10;
-        float pale = 1 - smooth(-3, 3, minf(brim, pom));
-        col red = cmix(C(.77f, .34f, .41f), C(1, .68f, .72f),
-                       sat(0.67f - (x + y + 60) / 180));
-        col white = cmix(C(.76f, .92f, .98f), C(1, 1, 1),
-                         sat(0.60f - (x + y + 70) / 160));
+        float brim = ellipse(x, y + 78, 53, 9);
+        float pom = len(x - 44, y + 109) - 11;
+        float pale = 1 - smooth(-2, 2, minf(brim, pom));
+        /* Soft gradient on the red cap, white fluffy brim and pom-pom. */
+        col red = cmix(C(.77f, .31f, .38f), C(1, .64f, .67f),
+                       sat(0.57f - (x + y + 68) / 135));
+        col white = cmix(C(.75f, .90f, .97f), C(1, 1, 1),
+                         sat(0.62f - (x + y + 76) / 145));
         bc = cmix(red, white, pale);
     }
     if (l < L_EGG && y > -55 && y < 17 && absf(x) < 53)
