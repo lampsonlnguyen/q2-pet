@@ -4,15 +4,16 @@ A virtual pet app for the Shanling Q2 based on [DiamondBond's original Buddy](ht
 
 - **Kasper** is the original ghost and retains its original drawing and interactions.
 - **Frosty** is rendered procedurally in `fidget.c`: two round snowballs, soft blue-white volumetric shading, the original ghost's eye and facial animation engine, a subtle red Santa hat, a small carrot nose and twig arms. **No scarf.**
-- **Auto** shows Frosty during December–February (UTC), and Kasper for the rest of the year.
+- **Tom** is a built-in white kawaii cat with 14 expression sprites, including sleep, dizzy, sick, egg, halo, and horns. Artwork is bundled as `pets/tom.png`.
+- **Auto** shows Frosty during December–February (UTC), and Kasper for the rest of the year. Tom is manually selectable.
 - **Custom** continues to read a user-provided `buddy.png` sprite sheet.
 
-The pet menu offers Auto, Kasper, Frosty, and Custom. Existing Tamagotchi progress and pet-selection migration are preserved.
+The pet menu offers Auto, Kasper, Frosty, Tom, and Custom. Existing Tamagotchi progress and pet-selection migration are preserved.
 
 ## Building
 
 Run `./build.sh` (Clang and LLD required). The installable output is `dist/fidget.zip`.
-No Pillow, sprite-generation step, or seasonal PNG assets are needed to build Frosty. Both included pets use Buddy's built-in framebuffer rendering, glow, and ground shadows. The old `tools/frosty_template.py` remains as an unused historical artwork experiment.
+The host build requires Pillow to unpack Tom's included sprite sheet. The Q2 itself does not need Pillow. No PNG assets are needed to render Kasper or Frosty. Kasper and Frosty use Buddy's procedural framebuffer renderer. Tom uses the bundled pre-rendered 14-frame sprite sheet. The old `tools/frosty_template.py` remains as an unused historical artwork experiment.
 
 ---
 
