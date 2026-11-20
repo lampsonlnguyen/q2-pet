@@ -184,7 +184,7 @@ typedef struct {
     int menu, sel, menu_down; /* Return's menu: open, its row, the row a touch went down on, plus 1 */
     float menu_t, menu_wheel; /* seconds open, the wheel's travel towards the next row */
     int on_pet;               /* Tamagotchi mode */
-    int pet_choice; /* Auto, Ghost, Snowman, Blossom, Beach Ball, Custom */
+    int pet_choice; /* Auto, Kasper, Frosty, Sakura, Wilson, Custom */
     tama tm;
     int now, save;            /* the clock, seconds since the epoch; the pet changed, to be kept */
     int icon, icon_down, stats; /* the bar's picked icon, the one a touch went down on plus 1, Stats */
@@ -730,11 +730,11 @@ static void pet_toggle(buddy *b) {
 }
 /* Four seasonal mascots; custom artwork remains an option. */
 static const char *const pet_names[] = {
-    "Auto", "Ghost", "Snowman", "Blossom", "Beach Ball", "Custom"
+    "Auto", "Kasper", "Frosty", "Sakura", "Wilson", "Custom"
 };
 #define PET_CHOICES 6
 static const char *const pet_files[] = {
-    "", "", "snowman.png", "blossom.png", "beach-ball.png", ""
+    "", "", "snowman.png", "blossom.png", "wilson.png", ""
 };
 /* Month from UTC epoch seconds; avoids libc/timezone dependencies on Q2. */
 static int utc_month(int now) {
