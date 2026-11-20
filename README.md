@@ -1,18 +1,18 @@
-# Q2 Pet — Four Seasons
+# Buddy — Four Seasons
 
 A seasonal virtual pet collection for Shanling Q2, based on
 [DiamondBond's original Buddy](https://github.com/DiamondBond/q2-fidget).
 
 | Season | Character | Sprite source |
 | --- | --- | --- |
-| Spring (March–May) | Blossom | `pets/blossom.png` |
-| Summer (June–August) | Beach Ball with sunglasses | `pets/beach-ball.png` |
-| Autumn (September–November) | Ghost | Original built-in Buddy |
-| Winter (December–February) | Snowman | `pets/snowman.png` |
+| Spring (March–May) | Sakura | `pets/blossom.png` |
+| Summer (June–August) | Wilson (volleyball) | `pets/wilson.png` |
+| Autumn (September–November) | Kasper (ghost) | Original built-in Buddy |
+| Winter (December–February) | Frosty (snowman) | `pets/snowman.png` |
 
 The **Return** menu offers Continue, Colour, Tamagotchi, Pet, and Quit.
-Choose Pet repeatedly to cycle through Auto, Ghost, Snowman, Blossom,
-Beach Ball, and Custom. Auto uses the Q2's UTC month. You may override
+Choose Pet repeatedly to cycle through Auto, Kasper, Frosty, Sakura,
+Wilson, and Custom. Auto uses the Q2's UTC month. You may override
 the season manually. There is **no hemisphere setting**, no fantasy
 animals, and no former Sun/Maple/Lantern/Moon/Diamond pets.
 
@@ -32,7 +32,8 @@ Run `python3 tools/generate_pets.py` to regenerate the editable-looking
 art source sheets under `generated/pets/` (requires Pillow on the build
 computer only). `./build.sh` generates and bundles the PNGs alongside
 the `.fidget/q2-fidget` executable, outputting `dist/fidget.zip`.
-The original `buddy-template.png` remains the built-in Ghost sample.
+Frosty has two plain rounded snowballs and no accessories. Sakura uses cleaner petals; Wilson is a soft pastel volleyball. All three have gentle sprite blooms and use Buddy's existing ground shadow.
+The original `buddy-template.png` remains the built-in Kasper ghost sample.
 
 GitHub Actions checks PNG sizes and builds an installable package on
 each push; find it under the successful workflow run's Artifacts.
