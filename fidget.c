@@ -184,7 +184,7 @@ typedef struct {
     int menu, sel, menu_down; /* Return's menu: open, its row, the row a touch went down on, plus 1 */
     float menu_t, menu_wheel; /* seconds open, the wheel's travel towards the next row */
     int on_pet;               /* Tamagotchi mode */
-    int pet_choice, hemisphere; /* 0 = automatic / northern; explicit pets 1..8, custom 9 */
+    int pet_choice; /* Auto, Ghost, Snowman, Blossom, Beach Ball, Custom */
     tama tm;
     int now, save;            /* the clock, seconds since the epoch; the pet changed, to be kept */
     int icon, icon_down, stats; /* the bar's picked icon, the one a touch went down on plus 1, Stats */
@@ -699,7 +699,7 @@ static void pop_read(const char *s) { /* anything short of a whole value: Buddy'
 
 /* Return's menu: Q2 Pod's pop-up when it says which (a title, then rows of POP_ROW), else a dark
  * box framed in the tone, the row picked in the tone and the others grey */
-#define MENU_ROWS 6
+#define MENU_ROWS 5
 #define MENU_W 281
 #define MENU_X ((W - MENU_W) / 2)
 #define MENU_STEP 28 /* the wheel's raw travel a row: as a menu tick at 50% sensitivity */
@@ -728,15 +728,15 @@ static void pet_toggle(buddy *b) {
     emit(b, PUFF, b->x, b->y, 0, 0, 0.5f, 20);
     moods(b, b->on_pet ? NORMAL : HAPPY, b->on_pet ? 0 : 1.0f, NORMAL, 0);
 }
+/* Four seasonal mascots; custom artwork remains an option. */
 static const char *const pet_names[] = {
-    "Auto", "Ghost", "Snowman", "Blossom", "Sun", "Maple", "Lantern", "Moon", "Diamond", "Custom"
+    "Auto", "Ghost", "Snowman", "Blossom", "Beach Ball", "Custom"
 };
-#define PET_CHOICES 10
+#define PET_CHOICES 6
 static const char *const pet_files[] = {
-    "", "", "snowman.png", "blossom.png", "sun.png", "maple.png",
-    "lantern.png", "moon.png", "diamond.png", ""
+    "", "", "snowman.png", "blossom.png", "beach-ball.png", ""
 };
-/* Civil date algorithm for UTC seasons; no libc/timezone database on this freestanding app. */
+/* Month from UTC epoch seconds; avoids libc/timezone dependencies on Q2. */
 static int utc_month(int now) {
     int z = now / 86400 + 719468;
     int era = z / 146097, doe = z - era * 146097;
@@ -748,12 +748,10 @@ static int utc_month(int now) {
 static int active_pet(const buddy *b) {
     if (b->pet_choice) return b->pet_choice;
     int month = utc_month(b->now);
-    if (b->hemisphere) month = month > 6 ? month - 6 : month + 6;
-    if (month == 12 || month <= 2) return 2; /* snowman */
-    if (month <= 5) return 3; /* blossom */
-    if (month <= 8) return 4; /* sun */
-    if (month == 10 && !b->hemisphere) return 1; /* Halloween ghost */
-    return 5; /* maple leaf */
+    if (month == 12 || month <= 2) return 2; /* winter */
+    if (month <= 5) return 3; /* spring */
+    if (month <= 8) return 4; /* summer */
+    return 1; /* autumn: original ghost */
 }
 #ifdef HOST
 static void switch_sheet(buddy *b) { (void)b; }
@@ -766,9 +764,6 @@ static void menu_pick(buddy *b) {
     else if (b->sel == 2) pet_toggle(b);
     else if (b->sel == 3) {
         b->pet_choice = (b->pet_choice + 1) % PET_CHOICES;
-        switch_sheet(b);
-    } else if (b->sel == 4) {
-        b->hemisphere = !b->hemisphere;
         switch_sheet(b);
     } else b->quit = 1;
 }
@@ -1306,7 +1301,20 @@ static col body_col(const buddy *b, const palette *P, int l, float x, float y, f
     }
     return l < L_EGG && y < HEAD_Y + 50 && y > HEAD_Y - 30 && absf(x) < 58 ? face(b, P, l, x, y, bc) : bc;
 }
-static col tint(const buddy *b, col c, float flash) { /* green when sick, white in the recolour's flash */
+static col tint(const buddy *b, col c, float flash) { /* tint *all* pet sprites with Colour */
+    if (b->pal == 1) {
+        /* Warm pink/lavender alternative to the blue palette. Preserve
+         * near-black outlines and eyes, while recolouring glossy bodies. */
+        float bright = maxf(c.r, maxf(c.g, c.b));
+        if (bright > 0.22f) {
+            col rotated = C(sat(c.r * .80f + c.b * .57f),
+                            sat(c.g * .60f + c.r * .12f + c.b * .10f),
+                            sat(c.b * .79f + c.r * .26f));
+            c = cmix(c, rotated, .82f);
+            if (minf(c.r, minf(c.g, c.b)) > .64f)
+                c = cmix(c, C(1, .82f, .97f), .22f);
+        }
+    }
     if (b->on_pet && b->tm.sick) c = cmix(c, C(.45f, .75f, .35f), 0.32f);
     return cmix(c, C(1, 1, 1), flash * 0.6f);
 }
@@ -1555,12 +1563,11 @@ static void draw_menu(const buddy *b, unsigned *fb) {
     const palette *P = &pals[b->pal];
     float in = sat(b->menu_t / 0.12f);
     dim(fb, 0.55f * in);
-    char colour[24], pet[24], selected[32], region[30];
+    char colour[24], pet[24], selected[32];
     put(put(colour, "Colour: "), pal_names[b->pal]);
     put(put(pet, "Tamagotchi: "), b->on_pet ? "On" : "Off");
     put(put(selected, "Pet: "), pet_names[b->pet_choice]);
-    put(put(region, "Hemisphere: "), b->hemisphere ? "South" : "North");
-    const char *rows[MENU_ROWS] = { "Continue", colour, pet, selected, region, "Quit" };
+    const char *rows[MENU_ROWS] = { "Continue", colour, pet, selected, "Quit" };
     if (pop.style) {
         pop_box(fb, "Buddy", rows, MENU_ROWS, menu_y(), b->sel, in);
         return;
@@ -1829,7 +1836,7 @@ static int check(void) {
         /* each style's rows are where a touch finds them, and its pop-ups paint as Q2 Pod's: a pixel of
          * the chosen row's band, bar or dot, of the box, and of Classic's strip */
         static unsigned fb[W * H];
-        const char *rows[MENU_ROWS] = { "Continue", "Colour: Blue", "Tamagotchi: Off", "Pet: Auto", "Hemisphere: North", "Quit" };
+        const char *rows[MENU_ROWS] = { "Continue", "Colour: Blue", "Tamagotchi: Off", "Pet: Auto", "Quit" };
         for (int style = POP_OWN; style <= POP_CLASSIC; ++style) {
             pop.style = style;
             for (int c = 0; c < POP_ROW; ++c) pop.head[c] = C(0, 0, (float)c / 64), pop.band[c] = C(0, (float)c / 64, 1);
@@ -2227,8 +2234,20 @@ static void load(buddy *b) {
     if (fd >= 0) sc(SYS_read, fd, (long)c, 4, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
     if (c[0] >= '0' && c[0] < '0' + PALS) b->pal = c[0] - '0';
     b->on_pet = c[1] == '1';
-    if (c[2] >= '0' && c[2] <= '9') b->pet_choice = c[2] - '0';
-    if (c[3] == '1') b->hemisphere = 1;
+    /* Explicit state marker migrates old ten-character saved choices. */
+    if (c[3] == '2') {
+        if (c[2] >= '0' && c[2] < '0' + PET_CHOICES)
+            b->pet_choice = c[2] - '0';
+    } else {
+        switch (c[2]) {
+        case '1': b->pet_choice = 1; break; /* Ghost */
+        case '2': b->pet_choice = 2; break; /* Snowman */
+        case '3': b->pet_choice = 3; break; /* Blossom */
+        case '4': b->pet_choice = 4; break; /* old Sun -> Beach Ball */
+        case '9': b->pet_choice = 5; break; /* Custom */
+        default: b->pet_choice = 0; break; /* removed pets -> Auto */
+        }
+    }
     long n = 0;
     fd = (int)sc(SYS_open, (long)pet_path, O_CLOEXEC, 0, 0, 0, 0);
     if (fd >= 0) n = sc(SYS_read, fd, (long)&b->tm, sizeof b->tm, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
@@ -2244,7 +2263,7 @@ static void switch_sheet(buddy *b) {
     int which = active_pet(b);
     if (which == 1) return;
     char *path = sheet_path;
-    if (which != 9) {
+    if (which != 5) {
         path = pet_sheet_path;
         char *end = path;
         while (*end) ++end;
@@ -2253,7 +2272,7 @@ static void switch_sheet(buddy *b) {
     }
     int fd = (int)sc(SYS_open, (long)path, O_CLOEXEC, 0, 0, 0, 0);
     if (fd < 0) {
-        b->note = which == 9 ? "No buddy.png found" : "Pet art missing";
+        b->note = which == 5 ? "No buddy.png found" : "Pet art missing";
         b->note_t = 5;
         return;
     }
@@ -2267,7 +2286,7 @@ static void switch_sheet(buddy *b) {
 }
 static void save_state(const buddy *b) {
     char c[4] = { (char)('0' + b->pal), b->on_pet ? '1' : '0',
-                  (char)('0' + b->pet_choice), (char)('0' + b->hemisphere) };
+                  (char)('0' + b->pet_choice), '2' };
     int fd = (int)sc(SYS_open, (long)state_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644, 0, 0, 0);
     if (fd >= 0) sc(SYS_write, fd, (long)c, 4, 0, 0, 0), sc(SYS_close, fd, 0, 0, 0, 0, 0);
 }
@@ -2311,7 +2330,7 @@ int main(int argc, char **argv) {
     init(&bud, 0);
     bud.now = now_s();
     load(&bud);
-    int pal = bud.pal, on_pet = bud.on_pet, pet_choice = bud.pet_choice, hemisphere = bud.hemisphere;
+    int pal = bud.pal, on_pet = bud.on_pet, pet_choice = bud.pet_choice;
     int displayed = active_pet(&bud);
     long long last = now_ms(), acc = 0, next = last, saved = last;
     while (!bud.quit) {
@@ -2341,8 +2360,8 @@ int main(int argc, char **argv) {
         back = back ? 0 : W;
         next = t + (lively(&bud) ? 16 : 33);
         /* now: a held Return's TERM saves nothing */
-        if (bud.pal != pal || bud.on_pet != on_pet || bud.pet_choice != pet_choice || bud.hemisphere != hemisphere) {
-            pal = bud.pal, on_pet = bud.on_pet, pet_choice = bud.pet_choice, hemisphere = bud.hemisphere;
+        if (bud.pal != pal || bud.on_pet != on_pet || bud.pet_choice != pet_choice) {
+            pal = bud.pal, on_pet = bud.on_pet, pet_choice = bud.pet_choice;
             save_state(&bud);
         }
         if (active_pet(&bud) != displayed) displayed = active_pet(&bud), switch_sheet(&bud);
