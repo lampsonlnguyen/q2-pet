@@ -233,11 +233,45 @@ static float arm_dist(float x, float y, float lift, float side) {
     return seg(x, y, sx, sy, sx + side * fcos(a) * 20, sy + fsin(a) * 20) - 10.5f;
 }
 static int is_egg(const buddy *b) { return b->on_pet && b->tm.stage == EGG; }
+
+/* Frosty is drawn with the same signed-distance renderer as Kasper.
+ * Snow, soft hat, nose and twig arms are volumes, not a sprite sheet.
+ * The red scarf is intentionally absent.
+ */
+static int active_pet(const buddy *b); /* declared here for the distance renderer */
+static float frosty_snow(float x, float y) {
+    float head = ellipse(x, y + 31, 54, 53);
+    float belly = ellipse(x, y - 33, 65, 55);
+    return smin(head, belly, 3);
+}
+static float frosty_hat(float x, float y) {
+    float cap = ellipse(x + 11, y + 83, 43, 26);
+    float brim = ellipse(x, y + 76, 55, 10);
+    float pom = len(x - 39, y + 102) - 10;
+    return minf(minf(cap, brim), pom);
+}
+static float frosty_twigs(float x, float y) {
+    float side = x < 0 ? -1 : 1, ax = absf(x);
+    float arm = seg(ax, y, 49, 18, 89, 4) - 3.5f;
+    float fork1 = seg(ax, y, 77, 8, 80, -7) - 2.4f;
+    float fork2 = seg(ax, y, 83, 6, 95, -1) - 2.4f;
+    (void)side;
+    return minf(arm, minf(fork1, fork2));
+}
+static float frosty_dist(float x, float y) {
+    return minf(frosty_snow(x, y), minf(frosty_hat(x, y), frosty_twigs(x, y)));
+}
 static float crown_dist(int form, float x, float y) { /* an adult's halo (form 1) or horns (-1) */
     return form > 0 ? absf(len(x, (y + 98) * 3.2f) - 30) - 5 : seg(absf(x), y, 28, -72, 37, -94) - 6;
 }
 static float body_dist(const buddy *b, float x, float y) {
     if (is_egg(b)) return ellipse(x, y - 5, 54, 68);
+    if (active_pet(b) == 2) {
+        float d = frosty_dist(x, y);
+        if (b->on_pet && b->tm.form > 0) d = minf(d, crown_dist(1, x, y));
+        if (b->on_pet && b->tm.form < 0) d = smin(d, crown_dist(-1, x, y), 5);
+        return d;
+    }
     float head = len(x, y - HEAD_Y) - HEAD_R;
     float hem = FOOT_Y + 5.5f * fcos(x * 0.155f + b->wave) + 2 * fsin(x * 0.07f - b->wave * 0.6f);
     float w = HEAD_R + 8 * smooth(HEAD_Y, FOOT_Y, y), r = 12;
@@ -1290,8 +1324,48 @@ static col shade(const palette *P, float x, float y, float d, float gx, float gy
     c = cadd(c, C(1, 1, 1), 0.28f * expneg(sh * sh / 260));
     return c;
 }
+/* Frosty's snow uses the ghost's volumetric slope shading. Hat and arms
+ * are separate smooth material regions without dark outlines or scarf.
+ * Render the original face procedurally so eyes keep Kasper's quality.
+ */
+static col frosty_col(const buddy *b, const palette *P, int l,
+                      float x, float y, float d, float gx, float gy) {
+    palette snow = { C(.99f, 1, 1), C(.67f, .84f, .94f),
+                     P->glow, P->eye };
+    col bc = shade(&snow, x, y, d, gx, gy);
+    float snow_d = frosty_snow(x, y);
+    float hat_d = frosty_hat(x, y), twig_d = frosty_twigs(x, y);
+
+    /* Materials are layered: arms behind snow, hat over its head. */
+    if (twig_d < 0 && snow_d > 0) {
+        bc = cmix(C(.62f, .66f, .68f), C(.81f, .84f, .85f),
+                  sat(0.48f - twig_d / 9));
+    }
+    if (hat_d < 0) {
+        float brim = ellipse(x, y + 76, 55, 10);
+        float pom = len(x - 39, y + 102) - 10;
+        float pale = 1 - smooth(-3, 3, minf(brim, pom));
+        col red = cmix(C(.77f, .34f, .41f), C(1, .68f, .72f),
+                       sat(0.67f - (x + y + 60) / 180));
+        col white = cmix(C(.76f, .92f, .98f), C(1, 1, 1),
+                         sat(0.60f - (x + y + 70) / 160));
+        bc = cmix(red, white, pale);
+    }
+    if (l < L_EGG && y > -55 && y < 17 && absf(x) < 53)
+        bc = face(b, P, l, x, y, bc);
+
+    /* Small soft carrot between eyes and mouth; no hard outline. */
+    if (l < L_EGG) {
+        float nose = seg(x, y, 1, -6, 12, -2) - (2.6f - 0.1f * maxf(x, 0));
+        if (nose < 1.5f)
+            bc = cmix(bc, C(1, .66f, .35f), sat(0.5f - nose));
+    }
+    return bc;
+}
 /* the ghost's colour at a point inside, looking l: shade's, speckled on an egg, faced otherwise */
 static col body_col(const buddy *b, const palette *P, int l, float x, float y, float d, float gx, float gy) {
+    if (active_pet(b) == 2 && l != L_EGG)
+        return frosty_col(b, P, l, x, y, d, gx, gy);
     col bc = shade(P, x, y, d, gx, gy);
     if (l == L_EGG) {
         float spot = minf(minf(ellipse(x + 22, y + 26, 10, 12), ellipse(x - 20, y + 2, 12, 10)), ellipse(x + 8, y - 36, 9, 8));
@@ -2266,7 +2340,7 @@ static void load(buddy *b) {
 static void switch_sheet(buddy *b) {
     sheet_ok = 0;
     int which = active_pet(b);
-    if (which == 1) return;
+    if (which == 1 || which == 2) return; /* procedural Kasper / Frosty */
     char *path = sheet_path;
     if (which != 3) {
         path = pet_sheet_path;
