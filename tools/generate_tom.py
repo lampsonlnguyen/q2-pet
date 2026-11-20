@@ -8,11 +8,87 @@ build-time conversion restores full RGBA and never runs on the Q2 device.
 import base64
 from io import BytesIO
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "assets" / "tom_sprite.png.b64"
 DEST = ROOT / "generated" / "pets" / "tom.png"
+
+def clean_frame(frame):
+    """Remove the AI source's grainy halo and keep Tom's actual silhouette.
+
+    A connected dark outline defines the cat. The enclosed white body,
+    nearby whiskers and dark details remain; background texture does not.
+    All operations are host-side with Pillow only.
+    """
+    gray = frame.convert("L")
+    pixels, light = frame.load(), gray.load()
+    boundary = Image.new("L", (192, 192))
+    bp = boundary.load()
+    for y in range(192):
+        for x in range(192):
+            bp[x, y] = 255 if light[x, y] < 130 and pixels[x, y][3] > 100 else 0
+
+    # Flood from the transparent outside until the connected outline.
+    outside = boundary.copy()
+    ImageDraw.floodfill(outside, (0, 0), 128, thresh=0)
+    op = outside.load()
+    regions = Image.new("L", (192, 192))
+    rp = regions.load()
+    for y in range(192):
+        for x in range(192):
+            rp[x, y] = 255 if op[x, y] != 128 else 0
+
+    # Keep only the largest enclosed shape: the cat (or the egg).
+    seen = bytearray(192 * 192)
+    largest = []
+    for y in range(192):
+        for x in range(192):
+            idx = y * 192 + x
+            if seen[idx] or not rp[x, y]:
+                continue
+            seen[idx] = 1
+            group = [idx]
+            for p in group:
+                u, v = p % 192, p // 192
+                for nx, ny in ((u-1,v),(u+1,v),(u,v-1),(u,v+1)):
+                    if nx < 0 or nx >= 192 or ny < 0 or ny >= 192:
+                        continue
+                    n = ny * 192 + nx
+                    if seen[n] or not rp[nx, ny]:
+                        continue
+                    seen[n] = 1
+                    group.append(n)
+            if len(group) > len(largest):
+                largest = group
+    if len(largest) < 5000:
+        raise ValueError("Tom's cat outline could not be isolated cleanly")
+    core = Image.new("L", (192, 192))
+    cp = core.load()
+    for idx in largest:
+        cp[idx % 192, idx // 192] = 255
+
+    # Preserve whiskers and dark marks near the body, not floating noise.
+    near = core.filter(ImageFilter.MaxFilter(39)).load()
+    mask = Image.new("L", (192, 192))
+    mp = mask.load()
+    for y in range(192):
+        for x in range(192):
+            extra = light[x, y] < 150 and pixels[x, y][3] > 90 and near[x, y]
+            mp[x, y] = 255 if cp[x, y] or extra else 0
+    alpha = mask.filter(ImageFilter.GaussianBlur(.45)).load()
+
+    # Remove gray paper texture within the cat without changing black eyes,
+    # pink ears or other saturated details.
+    for y in range(192):
+        for x in range(192):
+            r,g,b,a = pixels[x, y]
+            if min(r,g,b) > 165 and max(r,g,b)-min(r,g,b) < 48:
+                r = round(r*.25+255*.75)
+                g = round(g*.25+255*.75)
+                b = round(b*.25+255*.75)
+            pixels[x, y] = (r,g,b,min(a,alpha[x,y]))
+    return frame
 
 def main():
     source = base64.b64decode(SOURCE.read_text(), validate=False)
@@ -21,6 +97,12 @@ def main():
         if image.size != (1344, 384):
             raise ValueError(f"Tom sprite must be 1344x384, got {image.size}")
         sheet = image.convert("RGBA")
+    cleaned = Image.new("RGBA", sheet.size)
+    for idx in range(12):
+        x, y = (idx % 7) * 192, (idx // 7) * 192
+        tile = clean_frame(sheet.crop((x,y,x+192,y+192)))
+        cleaned.alpha_composite(tile, (x,y))
+    sheet = cleaned
     # Buddy overlays states 13/14 on top of the current expression.
     # The supplied reference sheet depicts full cats in those two cells;
     # replace them with accessory-only frames so no duplicate cat appears.
