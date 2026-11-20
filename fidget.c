@@ -1859,11 +1859,11 @@ static const char *sheet_read(const char *path) { /* 0 when it's on the sheet, e
 static float look_dist(const buddy *b, int l, float x, float y) {
     return l == L_HALO ? crown_dist(1, x, y) : l == L_HORNS ? crown_dist(-1, x, y) : body_dist(b, x, y);
 }
-static void template(unsigned char *rgba) {
+static void template(unsigned char *rgba, int pet_choice) {
     static buddy b;
     for (int l = 0; l < LOOKS; ++l) {
         init(&b, 0);
-        b.pet_choice = 1; /* original Kasper reference, independent of date */
+        b.pet_choice = pet_choice; /* export either Kasper or Frosty independently of date */
         b.arml = b.armr = 0.12f, b.on_pet = l == L_EGG, b.blink_t = l == L_BLINK ? 0.08f : 0;
         for (int j = 0; j < CELL; ++j)
             for (int i = 0; i < CELL; ++i) {
@@ -2176,9 +2176,9 @@ int main(int argc, char **argv) {
     const char *dir = argc > 1 ? argv[1] : "/tmp/fidget";
     if (dir[0] == 'c') return check();
     pop_read(getenv("Q2_POPUP")); /* preview.sh: a theme's pop-up */
-    if (!strcmp(dir, "template") && argc > 2) { /* template out.pam */
+    if ((!strcmp(dir, "template") || !strcmp(dir, "template-frosty")) && argc > 2) { /* template out.pam */
         static unsigned char rgba[SHEET_W * SHEET_H * 4];
-        template(rgba);
+        template(rgba, !strcmp(dir, "template-frosty") ? 2 : 1);
         FILE *o = fopen(argv[2], "wb");
         if (!o) return 1;
         fprintf(o, "P7\nWIDTH %d\nHEIGHT %d\nDEPTH 4\nMAXVAL 255\nTUPLTYPE RGB_ALPHA\nENDHDR\n", SHEET_W, SHEET_H);
