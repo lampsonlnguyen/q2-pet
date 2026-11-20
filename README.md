@@ -1,4 +1,4 @@
-# Buddy — Kasper & Frosty
+# Buddy v1.2.0 — Kasper, Frosty & Tom
 
 A virtual pet app for the Shanling Q2 based on [DiamondBond's original Buddy](https://github.com/DiamondBond/q2-fidget).
 
@@ -9,6 +9,11 @@ A virtual pet app for the Shanling Q2 based on [DiamondBond's original Buddy](ht
 - **Custom** continues to read a user-provided `buddy.png` sprite sheet.
 
 The pet menu offers Auto, Kasper, Frosty, Tom, and Custom. Existing Tamagotchi progress and pet-selection migration are preserved.
+
+## v1.2.0 release
+
+Install `fidget.zip` from the [v1.2.0 release](https://github.com/lampsonlnguyen/q2-pet/releases/tag/v1.2.0). The Q2 app includes Tom's PNG and renders Kasper and Frosty live from C. Release assets also include the four Kasper/Frosty 14-expression preview images, generated from the same procedural C renderer through `python3 tools/export_previews.py` (requires a host C compiler and Pillow). These preview images are not required on the Q2.
+
 
 ## Building
 
