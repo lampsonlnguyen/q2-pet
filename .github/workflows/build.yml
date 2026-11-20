@@ -55,7 +55,9 @@ jobs:
           files: dist/fidget.zip
 
       - name: Publish v1.0.0 from release commit
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release: v1.0.0')
+        if: >-
+          github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          startsWith(github.event.head_commit.message, 'release: v1.0.0')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.0
