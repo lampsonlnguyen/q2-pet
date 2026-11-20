@@ -1,42 +1,19 @@
-# Buddy — Four Seasons
+# Buddy — Kasper & Frosty
 
-A seasonal virtual pet collection for Shanling Q2, based on
-[DiamondBond's original Buddy](https://github.com/DiamondBond/q2-fidget).
+A virtual pet app for Shanling Q2, based on [DiamondBond's original Buddy](https://github.com/DiamondBond/q2-fidget).
 
-| Season | Character | Sprite source |
+| Selection | Character | Artwork |
 | --- | --- | --- |
-| Spring (March–May) | Sakura | `pets/blossom.png` |
-| Summer (June–August) | Wilson (volleyball) | `pets/wilson.png` |
-| Autumn (September–November) | Kasper (ghost) | Original built-in Buddy |
-| Winter (December–February) | Frosty (snowman) | `pets/snowman.png` |
+| Auto | Frosty in December–February (UTC); Kasper otherwise | Automatic |
+| Kasper | Original ghost | Built-in |
+| Frosty | Round, two-snowball winter buddy | `pets/snowman.png` |
+| Custom | User-supplied art | `buddy.png` |
 
-The **Return** menu offers Continue, Colour, Tamagotchi, Pet, and Quit.
-Choose Pet repeatedly to cycle through Auto, Kasper, Frosty, Sakura,
-Wilson, and Custom. Auto uses the Q2's UTC month. You may override
-the season manually. There is **no hemisphere setting**, no fantasy
-animals, and no former Sun/Maple/Lantern/Moon/Diamond pets.
+Sakura and Wilson have been retired for now. Their sprite sheets are not generated or packaged. Existing saved Sakura/Wilson selections migrate to Auto; other selections are preserved, including Custom.
 
-**Colour: Blue/Pink changes the artwork on all four pets**, not just
-the particle effects. Tamagotchi progress and the original touch/wheel
-interactions are kept. Existing saved selections from the older fork
-are migrated automatically. Custom `buddy.png` artwork still works.
+The **Return** menu offers Continue, Colour, Tamagotchi, Pet, and Quit. The Pet selection cycles through Auto, Kasper, Frosty, and Custom. Both buddies retain expressive animations, glow and ground shadow; Frosty keeps its big head, round body, and accessory-free appearance.
 
-## Buddy template compatibility
-
-Each generated seasonal pet is a **1344 x 384** RGBA PNG with **14 looks**
-in the original Buddy 7×2 layout. The anchor in each 192×192 cell is
-(96, 112). The look order is Normal, Blink, Happy, Petted, Surprised,
-Annoyed, Boo, Dizzy, Asleep, Sad, Sick, Egg, Halo, Horns.
-
-Run `python3 tools/generate_pets.py` to regenerate the editable-looking
-art source sheets under `generated/pets/` (requires Pillow on the build
-computer only). `./build.sh` generates and bundles the PNGs alongside
-the `.fidget/q2-fidget` executable, outputting `dist/fidget.zip`.
-Frosty has two plain rounded snowballs and no accessories. Sakura uses cleaner petals; Wilson is a soft pastel volleyball. All three have gentle sprite blooms and use Buddy's existing ground shadow.
-The original `buddy-template.png` remains the built-in Kasper ghost sample.
-
-GitHub Actions checks PNG sizes and builds an installable package on
-each push; find it under the successful workflow run's Artifacts.
+Frosty's sprite is a **1344 × 384** RGBA sheet with all **14 Buddy expressions**. Run `python3 tools/generate_pets.py` to generate it or `./build.sh` to create `dist/fidget.zip`. Custom `buddy.png` artwork, Tamagotchi progress, and wheel/touch controls continue to work.
 
 ---
 
