@@ -41,6 +41,23 @@ jobs:
         run: |
           cc -O2 -fno-math-errno -DHOST fidget.c -o /tmp/q2-pet-check
           /tmp/q2-pet-check check
+      - name: Export procedural Kasper and Frosty previews
+        run: |
+          python tools/export_previews.py
+          python - <<'PY'
+          from PIL import Image
+          for name in ("kasper", "frosty"):
+              for suffix in ("template", "guide"):
+                  path = f"generated/previews/{name}-{suffix}.png"
+                  with Image.open(path) as image:
+                      assert image.size == (1344, 384), path
+                      image.verify()
+          PY
+      - name: Upload character previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: buddy-character-previews
+          path: generated/previews/*.png
       - name: Build Q2 binary and package
         run: ./build.sh
       - name: Check Tom is bundled
@@ -56,27 +73,31 @@ jobs:
         with:
           files: dist/fidget.zip
 
-      - name: Publish v1.0.0 from release commit
+      - name: Publish v1.2.0 from release commit
         if: >-
           github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-          startsWith(github.event.head_commit.message, 'release: v1.0.0')
+          startsWith(github.event.head_commit.message, 'release: v1.2.0')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: Q2 Pet v1.0.0 — Four Seasons
+          tag_name: v1.2.0
+          name: Buddy v1.2.0 — Kasper, Frosty and Tom
           target_commitish: ${{ github.sha }}
           body: |
-            First four-season Q2 Pet release, based on DiamondBond's original Buddy.
+            Buddy v1.2.0 for Shanling Q2, based on DiamondBond's q2-fidget.
 
-            - Spring: Blossom
-            - Summer: Beach Ball with sunglasses
-            - Autumn: original Ghost
-            - Winter: Snowman
-            - Automatic season selection or manual character choice
-            - Blue/Pink recolouring for all seasonal buddies
-            - 14-expression sprite sheets, Tamagotchi and original wheel/touch controls
-            - Removed older fantasy and discontinued characters and hemisphere setting
+            - Kasper: original procedurally shaded ghost
+            - Frosty: procedural snowman with updated curved Santa hat brim,
+              no fixed carrot nose and no scarf
+            - Tom: built-in white cat with 14 expressive sprite frames;
+              cleaned transparent background
+            - Auto (Frosty in winter, Kasper otherwise), plus Custom buddy.png
+            - Tamagotchi, touch, wheel, themes and persisted pet selection
+            - Kasper and Frosty preview sheets exported from the actual C
+              renderer for inspection (not installed on Q2)
 
-            Download `fidget.zip` and install the .fidget app directory on the Shanling Q2.
-            Device-level testing is still recommended.
-          files: dist/fidget.zip
+            Download fidget.zip to install the .fidget directory on your Q2.
+            Preview images are supplied for visual inspection.
+            Physical device verification is still recommended.
+          files: |
+            dist/fidget.zip
+            generated/previews/*.png
