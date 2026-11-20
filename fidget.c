@@ -2248,6 +2248,7 @@ static void switch_sheet(buddy *b) {
         path = pet_sheet_path;
         char *end = path;
         while (*end) ++end;
+        while (end > path && end[-1] != '/') --end;
         put(end, pet_files[which]);
     }
     int fd = (int)sc(SYS_open, (long)path, O_CLOEXEC, 0, 0, 0, 0);
