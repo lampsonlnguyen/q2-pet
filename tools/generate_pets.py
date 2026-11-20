@@ -5,7 +5,6 @@ The character centre is (96,112) per cell, matching DiamondBond's Buddy
 template. All 14 states are rendered, with a transparent background.
 This is intentionally host-side only: no Pillow dependency on the Q2.
 """
-from math import cos, sin, pi
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -19,8 +18,6 @@ STATES = ["normal","blink","happy","petted","surprised","annoyed","boo",
           "dizzy","asleep","sad","sick","egg","halo","horns"]
 PALETTES = {
     "snowman": ("#efffff", "#73c8ff"),
-    "blossom": ("#ffb6de", "#f566b3"),
-    "wilson": ("#f8fcff", "#a5d9ff"),
 }
 
 def xy(vals):
@@ -46,7 +43,7 @@ def overlay(base, mask, color):
 def face(d, mood, kind):
     # All expressions remain visible on the character, even after shrinking
     # to the Q2's actual display size.
-    y = 110 if kind != "snowman" else 74
+    y = 74
     eyex = (75, 117)
     if mood in (1,8):
         for x in eyex:
@@ -99,22 +96,6 @@ def body(kind, mood):
         # Frosty: a large round head on an extra-plump body.
         ellipse(m, (24,75,168,185), 255)
         ellipse(m, (42,24,150,124), 255)
-    elif kind == "blossom":
-        # Five petals with distinct notched tips, unlike round flower blobs.
-        for i in range(5):
-            theta = (i*72-90)*pi/180
-            dx, dy = cos(theta), sin(theta)
-            tx, ty = -dy, dx
-            petal = [(96,109)]
-            for along, across in ((14,-23),(36,-31),(55,-23),
-                                  (50,-7),(45,0),(50,7),
-                                  (55,23),(36,31),(14,23)):
-                petal.append((96+dx*along+tx*across,
-                              109+dy*along+ty*across))
-            poly(m, petal, 255)
-        ellipse(m, (63,76,129,142), 255)
-    elif kind == "wilson":
-        ellipse(m, (36,45,156,165), 255)
     base, glow = PALETTES[kind]
     result = Image.new("RGBA", (SIZE,SIZE))
     # Soft ambient bloom plus a brighter close halo, like the original ghost.
@@ -138,52 +119,15 @@ def body(kind, mood):
         ellipse(d, (42,24,150,124), "#d8f5ff")
         ellipse(d, (48,28,144,116), "#eefcff")
         ellipse(d, (58,34,132,92), "#ffffff")
-    elif kind == "blossom":
-        # Sakura: five authentic-looking notched cherry blossom petals.
-        for i in range(5):
-            theta = (i*72-90)*pi/180
-            dx, dy = cos(theta), sin(theta)
-            tx, ty = -dy, dx
-            petal = [(96,109)]
-            for along, across in ((14,-23),(36,-31),(55,-23),
-                                  (50,-7),(45,0),(50,7),
-                                  (55,23),(36,31),(14,23)):
-                petal.append((96+dx*along+tx*across,
-                              109+dy*along+ty*across))
-            poly(d, petal, "#f7afd6", "#fbd3e8", 1)
-            lines(d, [(96+dx*18,109+dy*18),
-                      (96+dx*40,109+dy*40)], "#fbd9e9", 1)
-        ellipse(d, (62,78,130,143), "#ffd7e9")
-        ellipse(d, (70,86,122,136), "#ffedf5")
-        # Fine stamens kept away from the main facial features.
-        for angle in (-135,-95,-55,45,85,125):
-            theta = angle*pi/180
-            x2, y2 = 96+27*cos(theta), 110+27*sin(theta)
-            lines(d, [(96,110),(x2,y2)], "#ffe7aa", 1)
-            ellipse(d, (x2-2,y2-2,x2+2,y2+2), "#ffe58e")
-    elif kind == "wilson":
-        # Wilson: pale volleyball with curved stitched-panel seams,
-        # rather than beach-ball radial wedges.
-        colored = Image.new("RGBA", (SIZE, SIZE))
-        wd = ImageDraw.Draw(colored)
-        ellipse(wd, (36,45,156,165), "#f8fcff")
-        ellipse(wd, (43,51,148,156), "#f0f8ff")
-        seam = "#b9cde0"
-        wd.arc(xy((35,43,161,174)), 204, 333, fill=seam, width=3*SCALE)
-        wd.arc(xy((31,35,155,165)), 24, 151, fill=seam, width=3*SCALE)
-        wd.arc(xy((59,34,139,172)), 62, 213, fill=seam, width=3*SCALE)
-        wd.arc(xy((53,38,139,174)), 231, 358, fill=seam, width=3*SCALE)
-        wd.arc(xy((42,75,158,158)), 194, 331, fill=seam, width=3*SCALE)
-        alpha = Image.composite(colored.getchannel("A"),
-                                Image.new("L", (SIZE, SIZE)), mask)
-        colored.putalpha(alpha)
-        result.alpha_composite(colored)
-        d = ImageDraw.Draw(result)
     face(d,mood,kind)
     if mood==10:
         # Sick expression; retained so the original engine can add its green tint.
         ellipse(d,(145,100,152,108),"#75cc98")
     return result
+
+# Clear sprites retired in prior versions before regenerating the winter artwork.
+for retired in ("blossom.png", "wilson.png", "beach-ball.png"):
+    (OUT / retired).unlink(missing_ok=True)
 
 for name in PALETTES:
     sheet=Image.new("RGBA",(7*CELL,2*CELL))
